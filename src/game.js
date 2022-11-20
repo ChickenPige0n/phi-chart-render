@@ -1,7 +1,7 @@
 import Judgement from './judgement';
 import { Application, Container, Texture, Sprite, Graphics, Text } from 'pixi.js-legacy';
 
-const PorgressBarCache = (() =>
+const ProgressBarCache = (() =>
 {
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d');
@@ -14,7 +14,7 @@ const PorgressBarCache = (() =>
 
     return Texture.from(canvas);
 })();
-const PorgressBarHeadCache = (() =>
+const ProgressBarHeadCache = (() =>
 {
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d');
@@ -139,6 +139,7 @@ export default class Game
         this._gameStartTime = NaN;
         this._gameEndTime   = NaN;
         this._isPaused = false;
+        this._isEnded = false;
 
         this.resize = this.resize.bind(this);
         this._pauseBtnClickCallback = this._pauseBtnClickCallback.bind(this);
@@ -201,8 +202,8 @@ export default class Game
         this.judgement.createSprites(this._settings.showInputPoint);
 
         // 进度条
-        this.sprites.progressBarHead = new Sprite(PorgressBarHeadCache);
-        this.sprites.progressBar = new Sprite(PorgressBarCache);
+        this.sprites.progressBarHead = new Sprite(ProgressBarHeadCache);
+        this.sprites.progressBar = new Sprite(ProgressBarCache);
         this.sprites.progressBar.width = 0;
         this.sprites.progressBar.alpha = 1;
         this.sprites.progressBar.zIndex = 99999;
@@ -366,6 +367,7 @@ export default class Game
         this.chart.calcTime(0);
 
         this._isPaused = false;
+        this._isEnded = false;
 
         this._animateStatus = 0;
         this._gameStartTime = Date.now();
@@ -530,7 +532,7 @@ export default class Game
             if (isStart)
             {
                 this._animateStatus = 1;
-                this.resize(true,false);
+                this.resize(true, false);
 
                 setTimeout(async () =>
                 {
@@ -550,6 +552,7 @@ export default class Game
                     });
 
                     this._isPaused = false;
+                    this._isEnded = false;
                     this.sprites.fakeJudgeline.visible = false;
 
                     this._runCallback('start');
@@ -559,6 +562,7 @@ export default class Game
             {
                 this._animateStatus = 3;
                 this._isPaused = true;
+                this._isEnded = true;
                 this._runCallback('end');
             }
         }
@@ -608,7 +612,8 @@ export default class Game
         this.functions[type].forEach((callback) => callback(this));
     }
 
-    resize(withChartSprites = true, shuldResetFakeLine = true)
+
+    resize(withChartSprites = true, shouldResetFakeJudgeLine = true)
     {
         if (!this.render) return;
 
@@ -650,7 +655,7 @@ export default class Game
             this.render.mainContainerCover.visible = false;
         }
 
-        if (this.sprites)
+        if (!this._isEnded && this.sprites)
         {
             if (this.sprites.progressBar)
             {
@@ -673,7 +678,8 @@ export default class Game
                 this.sprites.fakeJudgeline.position.y = this.render.sizer.height / 2;
 
                 this.sprites.fakeJudgeline.height = this.render.sizer.lineScale * 18.75 * 0.008;
-                if(shuldResetFakeLine){
+                if (shouldResetFakeJudgeLine || this._isEnded)
+                {
                     this.sprites.fakeJudgeline.width = 0;
                 }
             }
@@ -697,8 +703,8 @@ export default class Game
         
         if (withChartSprites)
         {
-            this.judgement.resizeSprites(this.render.sizer);
-            this.chart.resizeSprites(this.render.sizer);
+            this.judgement.resizeSprites(this.render.sizer, this._isEnded);
+            this.chart.resizeSprites(this.render.sizer, this._isEnded);
         }
     }
 }

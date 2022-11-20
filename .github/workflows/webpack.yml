@@ -63,7 +63,9 @@ jobs:
           ignore_missing: true
       
       - name: Copy JavaScript to /public
-        run: cp ./dist/script.js ./public/script.js
+        run: |
+          cp ./dist/script.js ./public/script.js
+          cp ./dist/script.js.map ./public/script.js.map
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v1

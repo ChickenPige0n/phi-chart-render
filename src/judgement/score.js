@@ -144,7 +144,7 @@ export default class Score
         }
     }
 
-    resizeSprites(size)
+    resizeSprites(size, isEnded)
     {
         this.renderSize = size;
 
