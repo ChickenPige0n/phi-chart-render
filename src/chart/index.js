@@ -182,7 +182,7 @@ export default class Chart
             fontFamily: 'MiSans',
             fill: 0xFFFFFF
         });
-        this.sprites.info.songDiff.anchor.set(0, 1);
+        this.sprites.info.songDiff.anchor.set(1, 1);
         this.sprites.info.songDiff.zIndex = 99999;
 
         stage.addChild(this.sprites.info.songDiff);
@@ -253,13 +253,13 @@ export default class Chart
             });
         }
 
-        this.sprites.info.songName.style.fontSize = size.heightPercent * 27;
-        this.sprites.info.songName.position.x = size.heightPercent * 57;
-        this.sprites.info.songName.position.y = size.height - size.heightPercent * 66;
+        this.sprites.info.songName.style.fontSize = size.heightPercent * 40;
+        this.sprites.info.songName.position.x = size.heightPercent * 50;
+        this.sprites.info.songName.position.y = size.height - size.heightPercent * 25;
 
-        this.sprites.info.songDiff.style.fontSize = size.heightPercent * 20;
-        this.sprites.info.songDiff.position.x = size.heightPercent * 57;
-        this.sprites.info.songDiff.position.y = size.height - size.heightPercent * 42;
+        this.sprites.info.songDiff.style.fontSize = size.heightPercent * 40;
+        this.sprites.info.songDiff.position.x = size.width-size.heightPercent * 50;
+        this.sprites.info.songDiff.position.y = size.height - size.heightPercent * 25;
     }
 
     calcTime(currentTime)

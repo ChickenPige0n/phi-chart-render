@@ -789,13 +789,13 @@ function showGameResultPopup(game)
 
             if (!game._settings.challengeMode)
             {
-                if (-(80 / 360 * 100) <= acc && acc <= (80 / 360 * 100)) value.style.background = '#FFECA0';
+                if (-(80 / 360 * 100) <= acc && acc <= (80 / 360 * 100)) value.style.background = '#EDECB0';
                 else if (-(160 / 360 * 100) <= acc && acc <= (160 / 360 * 100)) value.style.background = '#B4E1FF';
                 else value.style.background = '#6c4343';
             }
             else
             {
-                if (-(40 / 180 * 100) <= acc && acc <= (40 / 180 * 100)) value.style.background = '#FFECA0';
+                if (-(40 / 180 * 100) <= acc && acc <= (40 / 180 * 100)) value.style.background = '#EDECB0';
                 else if (-(75 / 180 * 100) <= acc && acc <= (75 / 180 * 100)) value.style.background = '#B4E1FF';
                 else value.style.background = '#6c4343';
             }

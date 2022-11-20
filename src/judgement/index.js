@@ -16,14 +16,15 @@ const AllJudgeTimes = {
 
 const ClickAnimatePointCache = (() =>
 {
-    const pointSize = 26;
+    const pointSize = 40;
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d', { alpha: true });
 
     canvas.width = canvas.height = pointSize * 2;
     ctx.clearRect(0, 0, pointSize * 2, pointSize * 2);
     ctx.beginPath();
-    ctx.arc(pointSize, pointSize, pointSize, 0, Math.PI * 2);
+    ctx.rect(pointSize, pointSize, pointSize, pointSize)
+    //ctx.arc(pointSize, pointSize, pointSize, 0, Math.PI * 2);
     ctx.fillStyle = '#FFFFFF';
     ctx.fill();
 
@@ -138,7 +139,7 @@ export default class Judgement
         cont.scale.set(this.renderSize.noteScale * 5.6);
 
         anim.position.set(0, 0);
-        anim.tint = note.score === 4 ? 0xFFECA0 : note.score === 3 ? 0xB4E1FF : 0x6c4343;
+        anim.tint = note.score === 4 ? 0xEDECB0 : note.score === 3 ? 0xB4E1FF : 0x6c4343;
 
         anim.scale.set(256 / anim.texture.baseTexture.width);
         anim.type = note.score;
@@ -150,7 +151,7 @@ export default class Judgement
             {
                 blocks[i] = new Sprite(ClickAnimatePointCache);
 
-                blocks[i].tint = note.score === 4 ? 0xFFECA0 : 0xB4E1FF;
+                blocks[i].tint = note.score === 4 ? 0xEDECB0 : 0xB4E1FF;
 
                 blocks[i].distance = blocks[i]._distance = Math.random() * 100 + 240;
                 blocks[i].direction = Math.floor(Math.random() * 360);

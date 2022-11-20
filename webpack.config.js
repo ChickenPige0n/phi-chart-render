@@ -19,6 +19,7 @@ module.exports = {
         filename: 'script.js'
     },
     devServer: {
+        allowedHosts:["gz1.mossfrp.cn"],
         client: {
             logging: 'info',
             progress: true,

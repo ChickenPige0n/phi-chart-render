@@ -9,8 +9,21 @@ const PorgressBarCache = (() =>
     canvas.width = 1920;
     canvas.height = 12;
     ctx.clearRect(0, 0, 1920, 12);
-    ctx.fillStyle = '#FFFFFF';
+    ctx.fillStyle = '#919191';
     ctx.fillRect(0, 0, 1920, 12);
+
+    return Texture.from(canvas);
+})();
+const PorgressBarHeadCache = (() =>
+{
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+
+    canvas.width = 2;
+    canvas.height = 12;
+    ctx.clearRect(0, 0, 4, 12);
+    ctx.fillStyle = '#FFFFFF';
+    ctx.fillRect(0, 0, 4, 12);
 
     return Texture.from(canvas);
 })();
@@ -36,7 +49,7 @@ const PorgressBarCache = (() =>
   *         hitsound?,
   *         hitsoundVolume?,
   *         speed?,
-  *         noteScale?,
+  *         Scale?,
   *         bgDim?,
   *         multiNoteHL?,
   *         showInputPoint?,
@@ -118,7 +131,7 @@ export default class Game
         this._settings.challengeMode  = params.settings && params.settings.challengeMode !== undefined && params.settings.challengeMode !== null ? !!params.settings.challengeMode : false;
         this._settings.debug          = params.settings && params.settings.debug ? !!params.settings.debug : false;
 
-        this._watermarkText = params.watermark && params.watermark != '' ? params.watermark : 'github/MisaLiu/phi-chart-render';
+        this._watermarkText = 'ChickenPige0n Modified phi-chart-render by MisaLiu';
 
         this._musicId = null;
         this._audioOffset = 0;
@@ -177,7 +190,7 @@ export default class Game
             this.chart.judgelines.forEach((judgeline) =>
             {
                 if (!judgeline.sprite) return;
-                judgeline.sprite.tint = 0xFFECA0;
+                judgeline.sprite.tint = 0xEDECB0;
             });
         }
 
@@ -188,11 +201,15 @@ export default class Game
         this.judgement.createSprites(this._settings.showInputPoint);
 
         // 进度条
+        this.sprites.progressBarHead = new Sprite(PorgressBarHeadCache);
         this.sprites.progressBar = new Sprite(PorgressBarCache);
         this.sprites.progressBar.width = 0;
-        this.sprites.progressBar.alpha = 0.75;
+        this.sprites.progressBar.alpha = 1;
+        this.sprites.progressBar.zIndex = 99999;
+        this.sprites.progressBar.alpha = 1;
         this.sprites.progressBar.zIndex = 99999;
         this.render.mainContainer.addChild(this.sprites.progressBar);
+        this.render.mainContainer.addChild(this.sprites.progressBarHead);
 
         // 暂停按钮
         this.sprites.pauseButton = new Sprite(this.assets.textures.pauseButton);
@@ -206,8 +223,8 @@ export default class Game
         this.sprites.pauseButton.isEndRendering = false;
         this.sprites.pauseButton.lastRenderTime = Date.now();
 
-        this.sprites.pauseButton.anchor.set(1, 0);
-        this.sprites.pauseButton.alpha = 0.5;
+        this.sprites.pauseButton.anchor.set(0, 0);
+        this.sprites.pauseButton.alpha = 1;
         this.sprites.pauseButton.zIndex = 99999;
         this.render.mainContainer.addChild(this.sprites.pauseButton);
 
@@ -215,7 +232,7 @@ export default class Game
         this.sprites.fakeJudgeline = new Sprite(this.assets.textures.judgeline);
         this.sprites.fakeJudgeline.anchor.set(0.5);
         this.sprites.fakeJudgeline.zIndex = 99999;
-        if (this._settings.showAPStatus) this.sprites.fakeJudgeline.tint = 0xFFECA0;
+        if (this._settings.showAPStatus) this.sprites.fakeJudgeline.tint = 0xEDECB0;
         this.render.mainContainer.addChild(this.sprites.fakeJudgeline);
 
         if (this._settings.showFPS)
@@ -226,7 +243,7 @@ export default class Game
                 fill: 0xFFFFFF
             });
             this.render.fpsText.anchor.x = 1;
-            this.render.fpsText.alpha = 0.5;
+            this.render.fpsText.alpha = 0.0;
             this.render.fpsText.zIndex = 999999;
 
             this.render.mainContainer.addChild(this.render.fpsText);
@@ -355,15 +372,16 @@ export default class Game
         this._gameEndTime   = NaN;
 
         this.render.ticker.add(this._calcTick);
-        if (this._settings.showAPStatus) this.sprites.fakeJudgeline.tint = 0xFFECA0;
+        if (this._settings.showAPStatus) this.sprites.fakeJudgeline.tint = 0xEDECB0;
         this.sprites.fakeJudgeline.visible = true;
+        this.sprites.progressBarHead.x=-200;
 
         this.chart.judgelines.forEach((judgeline) =>
         {
             if (judgeline.sprite)
             {
                 judgeline.sprite.alpha = 0;
-                if (this._settings.showAPStatus) judgeline.sprite.tint = 0xFFECA0;
+                if (this._settings.showAPStatus) judgeline.sprite.tint = 0xEDECB0;
                 if (judgeline.debugSprite) judgeline.debugSprite.visible = false;
             }
         });
@@ -443,7 +461,7 @@ export default class Game
                 }
                 else if (pauseButton.alpha <= 0.5)
                 {
-                    pauseButton.alpha = 0.5;
+                    pauseButton.alpha = 1;
                     pauseButton.lastRenderTime = Date.now();
                     pauseButton.isEndRendering = false;
                 }
@@ -464,7 +482,8 @@ export default class Game
 
                 this.chart.calcTime(currentTime);
                 if (!this._isPaused) this.judgement.calcTick();
-
+                
+                this.sprites.progressBarHead.x = ((this.chart.music.seek() || 0) / this.chart.music._duration) * this.render.sizer.width;
                 this.sprites.progressBar.width = ((this.chart.music.seek() || 0) / this.chart.music._duration) * this.render.sizer.width;
                 break;
             }
@@ -490,15 +509,15 @@ export default class Game
         };
 
         // Combo、准度、分数、暂停按钮和进度条
-        sprites.score.combo.container.position.y = -(sprites.score.combo.container.height + sprites.score.acc.height) + ((sprites.score.combo.container.height + sprites.score.acc.height + (this.render.sizer.heightPercent * 41)) * progress);
+        sprites.score.combo.container.position.y = -(sprites.score.combo.container.height + sprites.score.acc.height) + ((sprites.score.combo.container.height + sprites.score.acc.height + (this.render.sizer.heightPercent * 12)) * progress);
         sprites.score.acc.position.y = sprites.score.combo.container.position.y + (this.render.sizer.heightPercent * 72);
-        sprites.score.score.position.y = -(sprites.score.score.height) + ((sprites.score.score.height + (this.render.sizer.heightPercent * 61)) * progress);
-        if (this.sprites.pauseButton) this.sprites.pauseButton.position.y = -(this.sprites.pauseButton.height) + ((this.sprites.pauseButton.height + (this.render.sizer.heightPercent * 74.5)) * progress);
+        sprites.score.score.position.y = -(sprites.score.score.height) + ((sprites.score.score.height + (this.render.sizer.heightPercent * 35)) * progress);
+        if (this.sprites.pauseButton) this.sprites.pauseButton.position.y = -(this.sprites.pauseButton.height) + ((this.sprites.pauseButton.height + (this.render.sizer.heightPercent * 35)) * progress);
         if (this.sprites.progressBar) this.sprites.progressBar.position.y = -(this.render.sizer.heightPercent * 12) * (1 - progress);
 
         // 谱面信息
-        sprites.chart.info.songName.position.y = (this.render.sizer.height + sprites.chart.info.songName.height) - ((sprites.chart.info.songName.height + (this.render.sizer.heightPercent * 66)) * progress);
-        sprites.chart.info.songDiff.position.y = sprites.chart.info.songName.position.y + (this.render.sizer.heightPercent * 24);
+        sprites.chart.info.songName.position.y = (this.render.sizer.height + sprites.chart.info.songName.height) - ((sprites.chart.info.songName.height + (this.render.sizer.heightPercent * 25)) * progress);
+        sprites.chart.info.songDiff.position.y = sprites.chart.info.songName.position.y;
 
         // 假判定线过场动画
         this.sprites.fakeJudgeline.width = this.render.sizer.width * progress;
@@ -511,7 +530,7 @@ export default class Game
             if (isStart)
             {
                 this._animateStatus = 1;
-                this.resize();
+                this.resize(true,false);
 
                 setTimeout(async () =>
                 {
@@ -589,7 +608,7 @@ export default class Game
         this.functions[type].forEach((callback) => callback(this));
     }
 
-    resize(withChartSprites = true)
+    resize(withChartSprites = true, shuldResetFakeLine = true)
     {
         if (!this.render) return;
 
@@ -636,15 +655,16 @@ export default class Game
             if (this.sprites.progressBar)
             {
                 this.sprites.progressBar.position.set(0, 0);
+                this.sprites.progressBarHead.scale.y = this.render.sizer.heightPercent;
                 this.sprites.progressBar.scale.y = this.render.sizer.heightPercent;
                 this.sprites.progressBar.width = this._music ? this._music.progress * this.render.sizer.width : 0;
             }
 
             if (this.sprites.pauseButton)
             {
-                this.sprites.pauseButton.position.x = this.render.sizer.width - this.render.sizer.heightPercent * 72;
-                this.sprites.pauseButton.position.y = this.render.sizer.heightPercent * 74.5;
-                this.sprites.pauseButton.scale.set(this.render.sizer.heightPercent * 0.94);
+                this.sprites.pauseButton.position.x = this.render.sizer.heightPercent * 40;
+                this.sprites.pauseButton.position.y = this.render.sizer.heightPercent * 35;
+                this.sprites.pauseButton.scale.set(this.render.sizer.heightPercent * 0.60);
             }
 
             if (this.sprites.fakeJudgeline)
@@ -653,7 +673,9 @@ export default class Game
                 this.sprites.fakeJudgeline.position.y = this.render.sizer.height / 2;
 
                 this.sprites.fakeJudgeline.height = this.render.sizer.lineScale * 18.75 * 0.008;
-                this.sprites.fakeJudgeline.width = 0;
+                if(shuldResetFakeLine){
+                    this.sprites.fakeJudgeline.width = 0;
+                }
             }
         }
 
