@@ -166,7 +166,7 @@ export default class Game
 
             bgCover.position.x = -this.render.mainContainerCover.width / 2;
             bgCover.position.y = -this.render.mainContainerCover.height / 2;
-            bgCover.alpha = 0.5;
+            bgCover.alpha = 0.8;
 
             this.render.mainContainerCover.zIndex = 1;
             this.render.mainContainerCover.addChild(bgCover);
@@ -511,14 +511,15 @@ export default class Game
         };
 
         // Combo、准度、分数、暂停按钮和进度条
-        sprites.score.combo.container.position.y = -(sprites.score.combo.container.height + sprites.score.acc.height) + ((sprites.score.combo.container.height + sprites.score.acc.height + (this.render.sizer.heightPercent * 12)) * progress);
+        sprites.score.combo.text.position.x = sprites.score.combo.container.width/2;
+        sprites.score.combo.container.position.y = -(sprites.score.combo.container.height + sprites.score.acc.height) + ((sprites.score.combo.container.height + sprites.score.acc.height + (this.render.sizer.heightPercent * 7)) * progress);
         sprites.score.acc.position.y = sprites.score.combo.container.position.y + (this.render.sizer.heightPercent * 72);
-        sprites.score.score.position.y = -(sprites.score.score.height) + ((sprites.score.score.height + (this.render.sizer.heightPercent * 35)) * progress);
-        if (this.sprites.pauseButton) this.sprites.pauseButton.position.y = -(this.sprites.pauseButton.height) + ((this.sprites.pauseButton.height + (this.render.sizer.heightPercent * 35)) * progress);
+        sprites.score.score.position.y = -(sprites.score.score.height) + ((sprites.score.score.height + (this.render.sizer.heightPercent * 24)) * progress);
+        if (this.sprites.pauseButton) this.sprites.pauseButton.position.y = -(this.sprites.pauseButton.height) + ((this.sprites.pauseButton.height + (this.render.sizer.heightPercent * 40)) * progress);
         if (this.sprites.progressBar) this.sprites.progressBar.position.y = -(this.render.sizer.heightPercent * 12) * (1 - progress);
 
         // 谱面信息
-        sprites.chart.info.songName.position.y = (this.render.sizer.height + sprites.chart.info.songName.height) - ((sprites.chart.info.songName.height + (this.render.sizer.heightPercent * 25)) * progress);
+        sprites.chart.info.songName.position.y = (this.render.sizer.height + sprites.chart.info.songName.height) - ((sprites.chart.info.songName.height + (this.render.sizer.heightPercent * 28)) * progress);
         sprites.chart.info.songDiff.position.y = sprites.chart.info.songName.position.y;
 
         // 假判定线过场动画
@@ -667,10 +668,12 @@ export default class Game
 
             if (this.sprites.pauseButton)
             {
-                this.sprites.pauseButton.position.x = this.render.sizer.heightPercent * 40;
-                this.sprites.pauseButton.position.y = this.render.sizer.heightPercent * 35;
+                this.sprites.pauseButton.position.x = this.render.sizer.heightPercent * 35;
+                this.sprites.pauseButton.position.y = this.render.sizer.heightPercent * 40;
                 this.sprites.pauseButton.scale.set(this.render.sizer.heightPercent * 0.60);
             }
+
+
 
             if (this.sprites.fakeJudgeline)
             {

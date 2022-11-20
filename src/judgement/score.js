@@ -58,7 +58,7 @@ export default class Score
             this.sprites.acc.text = 'ACCURACY 0.00%';
             this.sprites.score.text = '0000000';
 
-            this.sprites.combo.text.position.x = this.sprites.combo.number.width/2 - this.sprites.combo.text.width/2;
+            this.sprites.combo.text.position.x = this.sprites.combo.container.width/2;
         }
     }
 
@@ -72,17 +72,24 @@ export default class Score
         this.sprites.combo.container = new Container();
         this.sprites.combo.container.zIndex = 99999;
 
+
         this.sprites.combo.number = new Text('0', {
             fontFamily: 'A-OTF Shin Go Pr6N H',
             fill: 0xFFFFFF
         });
-        this.sprites.combo.number.alpha = 1;
+        this.sprites.combo.number.alpha = 0;
+        this.sprites.combo.number.anchor.set(0.5, 0);
+
+
         this.sprites.combo.text = new Text((this._autoPlay ? 'AUT' + 'OPL' + 'AY' : 'COMBO'), {
-            fontFamily: 'MiSans',
+            fontFamily: 'A-OTF Shin Go Pr6N H',
             fill: 0xFFFFFF
         });
-        this.sprites.combo.text.alpha = 0.55;
+        this.sprites.combo.text.alpha = 0;
+        this.sprites.combo.text.anchor.set(0.5, 0);
+
         this.sprites.combo.container.addChild(this.sprites.combo.number, this.sprites.combo.text);
+
         stage.addChild(this.sprites.combo.container);
 
         this.sprites.acc = new Text('ACCURACY 0.00%', {
@@ -98,7 +105,7 @@ export default class Score
             fill: 0xFFFFFF
         });
         this.sprites.score.alpha = 1;
-        this.sprites.score.anchor.set(1, 0.25);
+        this.sprites.score.anchor.set(1, 0);
         this.sprites.score.zIndex = 99999;
         stage.addChild(this.sprites.score);
 
@@ -150,24 +157,24 @@ export default class Score
 
         if (!this.sprites) return;
 
-        this.sprites.combo.number.style.fontSize = size.heightPercent * 80;
-        this.sprites.combo.text.style.fontSize = size.heightPercent * 30;
+        this.sprites.combo.number.style.fontSize = size.heightPercent * 73;
+        this.sprites.combo.text.style.fontSize = size.heightPercent * 37;
 
         this.sprites.acc.style.fontSize = size.heightPercent * 20;
 
-        this.sprites.score.style.fontSize = size.heightPercent * 55;
+        this.sprites.score.style.fontSize = size.heightPercent * 50;
 
-        this.sprites.combo.container.position.x = size.width/2-this.sprites.combo.container.width/2+size.heightPercent*40;
-        this.sprites.combo.container.position.y = size.heightPercent * 12;
-        this.sprites.combo.number.position.x = this.sprites.combo.container.width/4-this.sprites.combo.number.width/2;
-        this.sprites.combo.text.position.x = this.sprites.combo.container.width/4 - this.sprites.combo.text.width/2;
-        this.sprites.combo.text.position.y = size.heightPercent * 90;
+        this.sprites.combo.container.position.x = size.width/2-this.sprites.combo.container.width/2;
+        this.sprites.combo.container.position.y = size.heightPercent * 7;
+        this.sprites.combo.number.position.x = this.sprites.combo.container.width/2;
+        this.sprites.combo.text.position.x = this.sprites.combo.container.width/2;
+        this.sprites.combo.text.position.y = size.heightPercent * 82;
 
         this.sprites.acc.position.x = size.heightPercent * 7299;
         this.sprites.acc.position.y = size.heightPercent * 11399;
 
         this.sprites.score.position.x = size.width - size.heightPercent * 40;
-        this.sprites.score.position.y = size.heightPercent * 35;
+        this.sprites.score.position.y = size.heightPercent * 26;
     }
 
     pushJudge(type = 0, judgelines = [])
@@ -245,6 +252,15 @@ export default class Score
 
         if (this.sprites)
         {
+            if(this.combo >= 3)
+            {
+                this.sprites.combo.text.alpha   = 1;
+                this.sprites.combo.number.alpha = 1;
+            }else
+            {
+                this.sprites.combo.text.alpha   = 0;
+                this.sprites.combo.number.alpha = 0;
+            }
             this.sprites.combo.number.text = this.combo;
 
             // this.sprites.acc.text = 'ACCURACY ' + (this.acc * 100).toFixed(2) + '%';
@@ -258,8 +274,8 @@ export default class Score
             this.sprites.score.valueChangedTime = getTime();
 
 
-            this.sprites.combo.text.position.x = this.sprites.combo.container.width/4 - this.sprites.combo.text.width/2;
-            this.sprites.combo.number.position.x = this.sprites.combo.container.width/4-this.sprites.combo.number.width/2;
+            this.sprites.combo.text.position.x = this.sprites.combo.container.width/2;
+            this.sprites.combo.number.position.x = this.sprites.combo.container.width/2;
             //this.sprites.combo.text.position.x = this.sprites.combo.number.width/2 - this.sprites.combo.text.width/2;
         }
     }
