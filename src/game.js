@@ -195,7 +195,7 @@ export default class Game
             for (const judgeline of this.chart.judgelines)
             {
                 if (!judgeline.sprite) continue;
-                judgeline.sprite.tint = 0xEDECB0;
+                judgeline.sprite.tint = 0xFFECA0;
             };
         }
 
@@ -237,7 +237,7 @@ export default class Game
         this.sprites.fakeJudgeline = new Sprite(this.assets.textures.judgeline);
         this.sprites.fakeJudgeline.anchor.set(0.5);
         this.sprites.fakeJudgeline.zIndex = 99999;
-        if (this._settings.showAPStatus) this.sprites.fakeJudgeline.tint = 0xEDECB0;
+        if (this._settings.showAPStatus) this.sprites.fakeJudgeline.tint = 0xFFECA0;
         this.render.mainContainer.addChild(this.sprites.fakeJudgeline);
 
         if (this._settings.showFPS)
@@ -248,7 +248,7 @@ export default class Game
                 fill: 0xFFFFFF
             });
             this.render.fpsText.anchor.x = 1;
-            this.render.fpsText.alpha = 0.0;
+            this.render.fpsText.alpha = 1;
             this.render.fpsText.zIndex = 999999;
 
             this.render.mainContainer.addChild(this.render.fpsText);
@@ -285,7 +285,8 @@ export default class Game
         if (this._musicId) throw new Error('You have already started');
 
         this.resize();
-
+        this.render.ticker.minFPS = 60;
+        this.render.ticker.maxFPS = 60;
         if (this.render.fpsText)
         {
             this.render.fpsCounter = setInterval(() =>
@@ -376,7 +377,7 @@ export default class Game
         this._gameEndTime   = NaN;
 
         this.render.ticker.add(this._calcTick);
-        if (this._settings.showAPStatus) this.sprites.fakeJudgeline.tint = 0xEDECB0;
+        if (this._settings.showAPStatus) this.sprites.fakeJudgeline.tint = 0xFFECA0;
         this.sprites.fakeJudgeline.visible = true;
         this.sprites.progressBarHead.x=-200;
 
@@ -510,6 +511,7 @@ export default class Game
             chart: this.chart.sprites
         };
 
+        this.render.fpsText.text = 'FPS: ' + (this.render.ticker.FPS).toFixed(0);
         // Combo、准度、分数、暂停按钮和进度条
         sprites.score.combo.text.position.x = sprites.score.combo.container.width/2;
         sprites.score.combo.container.position.y = -(sprites.score.combo.container.height + sprites.score.acc.height) + ((sprites.score.combo.container.height + sprites.score.acc.height + (this.render.sizer.heightPercent * 7)) * progress);
