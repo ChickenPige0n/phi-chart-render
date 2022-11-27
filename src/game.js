@@ -135,7 +135,7 @@ export default class Game
         this._settings.challengeMode  = params.settings && params.settings.challengeMode !== undefined && params.settings.challengeMode !== null ? !!params.settings.challengeMode : false;
         this._settings.debug          = params.settings && params.settings.debug ? !!params.settings.debug : false;
 
-        this._watermarkText = 'ChickenPige0n Modified phi-chart-render by MisaLiu';
+        this._watermarkText = 'phi-chart-render by MisaLiu(Modified by ChickenPige0n)';
 
         this._musicId = null;
         this._audioOffset = 0;
