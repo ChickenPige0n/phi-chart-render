@@ -102,7 +102,11 @@ export default class Game
             canvas         : this.render.view,
             assets         : {
                 textures : { normal: this.assets.textures.clickRaw, bad: this.assets.textures.clickRaw },
-                sounds   : this.assets.sounds,
+                sounds   : {
+                    tap   : this.assets.sounds.tap,
+                    drag  : this.assets.sounds.drag,
+                    flick : this.assets.sounds.flick
+                },
             },
             hitsound       : params.settings && params.settings.hitsound !== undefined && params.settings.hitsound !== null ? !!params.settings.hitsound : true,
             hitsoundVolume : params.settings && !isNaN(Number(params.settings.hitsoundVolume)) ? Number(params.settings.hitsoundVolume) : 1,
@@ -188,11 +192,11 @@ export default class Game
         
         if (this._settings.showAPStatus)
         {
-            this.chart.judgelines.forEach((judgeline) =>
+            for (const judgeline of this.chart.judgelines)
             {
-                if (!judgeline.sprite) return;
+                if (!judgeline.sprite) continue;
                 judgeline.sprite.tint = 0xEDECB0;
-            });
+            };
         }
 
         this.chart.music.rate(this._settings.speed);
@@ -297,23 +301,21 @@ export default class Game
         this.render.ticker.add(this._calcTick);
 
         this.chart.calcTime(0);
-        this.chart.judgelines.forEach((judgeline) =>
+        for (const judgeline of this.chart.judgelines)
         {
-            if (judgeline.sprite)
-            {
-                judgeline.sprite.alpha = 0;
-                if (judgeline.debugSprite) judgeline.debugSprite.visible = false;
-            }
-        });
-        this.chart.notes.forEach((note) =>
+            if (!judgeline.sprite) continue;
+
+            judgeline.sprite.alpha = 0;
+            if (judgeline.debugSprite) judgeline.debugSprite.visible = false;
+        };
+        for (const note of this.chart.notes)
         {
-            if (note.sprite)
-            {
-                note.sprite.alpha = 0;
-                if (note.debugSprite) note.debugSprite.visible = false;
-                if (note.hitsound) note.hitsound.volume(this.judgement._hitsoundVolume);
-            }
-        });
+            if (!note.sprite) continue;
+
+            note.sprite.alpha = 0;
+            if (note.debugSprite) note.debugSprite.visible = false;
+            if (note.hitsound) note.hitsound.volume(this.judgement._hitsoundVolume);
+        };
 
         this.judgement.createClickAnimate({
             type: 1,
@@ -378,23 +380,21 @@ export default class Game
         this.sprites.fakeJudgeline.visible = true;
         this.sprites.progressBarHead.x=-200;
 
-        this.chart.judgelines.forEach((judgeline) =>
+        for (const judgeline of this.chart.judgelines)
         {
-            if (judgeline.sprite)
-            {
-                judgeline.sprite.alpha = 0;
-                if (this._settings.showAPStatus) judgeline.sprite.tint = 0xEDECB0;
-                if (judgeline.debugSprite) judgeline.debugSprite.visible = false;
-            }
-        });
-        this.chart.notes.forEach((note) =>
+            if (!judgeline.sprite) continue;
+
+            judgeline.sprite.alpha = 0;
+            if (this._settings.showAPStatus) judgeline.sprite.tint = 0xFFECA0;
+            if (judgeline.debugSprite) judgeline.debugSprite.visible = false;
+        };
+        for (const note of this.chart.notes)
         {
-            if (note.sprite)
-            {
-                note.sprite.alpha = 0;
-                if (note.debugSprite) note.debugSprite.visible = false;
-            }
-        });
+            if (!note.sprite) continue;
+
+            note.sprite.alpha = 0;
+            if (note.debugSprite) note.debugSprite.visible = false;
+        };
     }
 
     destroy(removeCanvas = false)
@@ -539,18 +539,17 @@ export default class Game
                 {
                     this._musicId = this.chart.music.play();
 
-                    this.chart.judgelines.forEach((judgeline) =>
+                    for (const judgeline of this.chart.judgelines)
                     {
-                        if (judgeline.sprite)
-                        {
-                            judgeline.sprite.alpha = 1;
-                            if (judgeline.debugSprite) judgeline.debugSprite.visible = true;
-                        }
-                    });
-                    this.chart.notes.forEach((note) =>
+                        if (!judgeline.sprite) continue;
+
+                        judgeline.sprite.alpha = 1;
+                        if (judgeline.debugSprite) judgeline.debugSprite.visible = true;
+                    };
+                    for (const note of this.chart.notes)
                     {
                         if (note.sprite) note.sprite.alpha = note.basicAlpha;
-                    });
+                    };
 
                     this._isPaused = false;
                     this._isEnded = false;
@@ -580,22 +579,20 @@ export default class Game
             else if (this.judgement.score.APType === 0) this.sprites.fakeJudgeline.tint = 0xFFFFFF;
         }
         
-        this.chart.judgelines.forEach((judgeline) =>
+        for (const judgeline of this.chart.judgelines)
         {
-            if (judgeline.sprite)
-            {
-                judgeline.sprite.alpha = 0;
-                if (judgeline.debugSprite) judgeline.debugSprite.visible = false;
-            }
-        });
-        this.chart.notes.forEach((note) =>
+            if (!judgeline.sprite) continue;
+
+            judgeline.sprite.alpha = 0;
+            if (judgeline.debugSprite) judgeline.debugSprite.visible = false;
+        };
+        for (const note of this.chart.notes)
         {
-            if (note.sprite)
-            {
-                note.sprite.alpha = 0;
-                if (note.debugSprite) note.debugSprite.visible = false;
-            }
-        });
+            if (!note.sprite) continue;
+
+            note.sprite.alpha = 0;
+            if (note.debugSprite) note.debugSprite.visible = false;
+        };
 
         if (this.judgement.input.sprite) this.judgement.input.sprite.clear();
     }
@@ -629,6 +626,7 @@ export default class Game
         if (this.render.sizer.widerScreen && this.render.mainContainer)
         {
             this.render.mainContainer.mask = this.render.mainContainerMask;
+            this.render.mainContainerMask.visible = true;
 
             this.render.mainContainerMask.clear()
                 .beginFill(0xFFFFFF)
@@ -638,6 +636,7 @@ export default class Game
         else
         {
             this.render.mainContainer.mask = null;
+            this.render.mainContainerMask.visible = false;
         }
         // 主舞台超宽屏覆盖计算
         if (this.render.sizer.widerScreen && this.render.mainContainerCover)
