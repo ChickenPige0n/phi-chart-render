@@ -66,57 +66,56 @@
     <body>
         <div class="file-select">
             <div>
-                <b>FOR IOS USERS:</b><br>
-                <span>Please use Quark Browser for better experience (not ad)</span>
+                <b>如果你是IOS用户:</b><br>
+                <span>请使用夸克浏览器以获得更好的体验(不是广告)</span>
             </div>
             <hr />
             <div>
-                Due to some performance issue on FireFox Android, consider using <a href="https://github.com/kiwibrowser/src.next/releases" target="_blank">Kiwi Browser</a> or <a href="https://viayoo.com/" target="_blank">Via</a> or <a href="https://www.google.com/chrome/" target="_blank">Google Chrome</a>.
+                由于安卓火狐浏览器的一些性能问题，考虑使用 <a href="https://github.com/kiwibrowser/src.next/releases" target="_blank">Kiwi Browser</a> 或 <a href="https://viayoo.com/" target="_blank">Via</a> 或 <a href="https://www.google.com/chrome/" target="_blank">Google Chrome</a>.
             </div>
             <hr />
-            <label>Select a *.zip/*.pez file: <input type="file" id="file-chart-pack" disabled></label><br>
-            <div class="loading" id="file-read-progress">Please wait until assets loaded...</div>
+            <label>选择一个 .zip 或 .pez 文件: <input type="file" id="file-chart-pack" disabled></label><br>
+            <div class="loading" id="file-read-progress">请等待素材加载完毕...</div>
             <hr />
-            <label>Chart: <select id="file-chart"><option disabled selected>Select a file first...</option></select></label><br>
-            <label>Music: <select id="file-music"><option disabled selected>Select a file first...</option></select></label><br>
-            <label>BG: <select id="file-bg"><option disabled selected>Select a file first...</option></select></label>
+            <label>谱面: <select id="file-chart"><option disabled selected>请先选择一个文件...</option></select></label><br>
+            <label>歌曲: <select id="file-music"><option disabled selected>请先选择一个文件...</option></select></label><br>
+            <label>背景图片: <select id="file-bg"><option disabled selected>请先选择一个文件...</option></select></label>
             <hr />
-            <div class="loading" id="loading-status">Loading scripts...</div>
+            <div class="loading" id="loading-status">加载脚本中...</div>
+            <button id="start" disabled>开始</button>
             <hr />
-            <label><input type="checkbox" id="settings-multi-note-hl" checked />Highlight same time notes</label><br>
-            <label><input type="checkbox" id="settings-show-ap-status" checked />Show AP status</label><br>
-            <label><input type="checkbox" id="settings-show-input-point" checked />Show input point</label><br>
-            <label>Note scale: <input type="range" id="settings-note-scale" min="0" max="4000" value="2000"></label><br>
-            <label>Background dim: <input type="range" id="settings-bg-dim" min="0" max="1" step="0.01" value="0.5"></label><br>
-            <label>BG blur: <input type="range" id="settings-bg-blur" min="0" max="100" value="50" /></label>
+            <label><input type="checkbox" id="settings-multi-note-hl" checked />高亮等时音符</label><br>
+            <label><input type="checkbox" id="settings-show-ap-status" checked />FC/AP指示器</label><br>
+            <label><input type="checkbox" id="settings-show-input-point" />显示触摸位置</label><br>
+            <label>Note大小: <input type="range" id="settings-note-scale" min="0" max="4000" value="2000"></label><br>
+            <label>背景变暗: <input type="range" id="settings-bg-dim" min="0" max="1" step="0.01" value="0.5"></label><br>
+            <label>背景模糊: <input type="range" id="settings-bg-blur" min="0" max="100" value="50" /></label>
             <hr />
-            <label>Audio offset: <input type="number" id="settings-audio-offset" placeholder="0" style="width:4em" />ms</label><br>
-            <div style="margin-left:20px">(recommended -100ms for Chrome/Chrome based browsers)</div>
-            <button id="settings-test-input-delay">Tap on this button to test input delay...</button><br>
-            <label>Speed: <input type="range" id="settings-audio-speed" min="0.25" max="1.75" step="0.25" value="1"></label><br>
+            <label>音频偏移: <input type="number" id="settings-audio-offset" placeholder="0" style="width:4em" />ms</label><br>
+            <div style="margin-left:20px">(对于Chrome或基于Chrome的浏览器，建议 -100ms)</div>
+            <button id="settings-test-input-delay">点击这个按钮以测试输入延迟...</button><br>
+            <label>谱面速度: <input type="range" id="settings-audio-speed" min="0.25" max="1.75" step="0.25" value="1"></label><br>
             <hr />
-            <label><input type="checkbox" id="settings-hitsound" checked />Hitsound</label><br>
-            <label>Hitsound volume: <input type="range" id="settings-hitsound-volume" min="0" max="1" step="0.01" value="1"></label><br>
+            <label><input type="checkbox" id="settings-hitsound" checked />开启打击音</label><br>
+            <label>打击音音量: <input type="range" id="settings-hitsound-volume" min="0" max="1" step="0.01" value="1"></label><br>
             <hr />
-            <label><input type="checkbox" id="settings-challenge-mode" />Challenge Mode</label><br>
+            <label><input type="checkbox" id="settings-challenge-mode" />挑战模式</label><br>
             <label><input type="checkbox" id="settings-autoplay" />AutoPlay</label><br>
             <label>
-                <input type="checkbox" id="settings-force-canvas" />Force canvas renderer
+                <input type="checkbox" id="settings-force-canvas" />强制使用canvas渲染器
                 <div style="margin-left:20px"><i>(may get better performance on some devices/browsers,<br>disabled if your device/browser doesn't support WebGL)</i></div>
             </label>
-            <label><input type="checkbox" id="settings-anti-alias" checked />Anti-alias</label><br>
-            <label><input type="checkbox" id="settings-low-resolution" />Low resolution mode</label><br>
+            <label><input type="checkbox" id="settings-anti-alias" checked />抗锯齿</label><br>
+            <label><input type="checkbox" id="settings-low-resolution" />低分辨率模式</label><br>
             <label><input type="checkbox" id="settings-debug" />Debug</label><br>
             <hr />
-            <button id="start" disabled>Start</button>
-            <hr />
-            Current git hash: {{CURRENT_HASH}}<br>
-            GitHub homepage: <a href="https://github.com/MisaLiu/phi-chart-render" target="_blank">https://github.com/MisaLiu/phi-chart-render</a><br>
-            Report bugs <a href="https://github.com/MisaLiu/phi-chart-render/issues/new/choose" target="_blank">Here</a>
+            此版本是被ChickenPige0n修改过的版本,原作者为MisaLiu.</br>
+            GitHub 首页: <a href="https://github.com/ChickenPige0n/phi-chart-render" target="_blank">当前分支地址</a> 或 <a href="https://github.com/MisaLiu/phi-chart-render" target="_blank">原项目地址</a><br>
+            <a href="https://github.com/ChickenPige0n/phi-chart-render/issues/new/choose" target="_blank">在这</a>汇报bug
             <hr />
             We uses <a href="https://sentry.io" target="_blank">Sentry.io</a> and <a href="https://analytics.google.com/" target="_blank">Google Analytics</a> to tracking errors and analyze user usage data.
 
-            <button onclick="fullscreen.toggle(document.body, false)" class="fullscreen" id="fullscreen">Fullscreen</button>
+            <button onclick="fullscreen.toggle(document.body, false)" class="fullscreen" id="fullscreen">全屏</button>
         </div>
 
         <div class="debug-value"></div>

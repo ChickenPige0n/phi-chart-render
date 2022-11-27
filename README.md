@@ -4,6 +4,8 @@ A *Phigros* chart render based on [Pixi.js](https://pixijs.com)
 
 This project is still working.
 
+此分支已被ChickenPige0n修改！原作者为[@MisaLiu](https://github.com/lchzh3473)，[这里](https://github.com/MisaLiu/phi-chart-render) 是原项目地址
+
 Huge thanks to [@lchzh3473](https://github.com/lchzh3473) and his awesome [sim-phi](https://github.com/lchzh3473/sim-phi) project!
 
 ## Currently supported chart features
