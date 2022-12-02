@@ -21,6 +21,21 @@ const ProgressBarCache = (() =>
     return Texture.from(canvas);
 })();
 
+
+const ProgressBarHeadCache = (() =>
+{
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+
+    canvas.width = 2;
+    canvas.height = 12;
+    ctx.clearRect(0, 0, 4, 12);
+    ctx.fillStyle = '#FFFFFF';
+    ctx.fillRect(0, 0, 4, 12);
+
+    return Texture.from(canvas);
+})();
+
 /**
   * {
   *     render: {
