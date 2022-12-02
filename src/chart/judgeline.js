@@ -1,3 +1,4 @@
+import * as verify from '@/verify';
 import utils from './convert/utils';
 import { Sprite, Container, Text, Graphics } from 'pixi.js-legacy';
 
@@ -5,10 +6,11 @@ export default class Judgeline
 {
     constructor(params)
     {
-        this.id               = !isNaN(params.id) ? Number(params.id) : -1;
+        this.id               = verify.number(params.id, -1, 0);
         this.texture          = params.texture ? params.texture : null;
         this.parentLine       = params.parentLine ? params.parentLine : null;
-        this.isCover          = params.isCover !== undefined && params.isCover !== null ? !!params.isCover : true;
+        this.zIndex           = verify.number(params.zIndex, NaN, 1);
+        this.isCover          = verify.bool(params.isCover, true);
         this.useOfficialScale = false;
 
         this.eventLayers = [];
@@ -49,6 +51,7 @@ export default class Judgeline
         else this.scaleY = 1;
 
         this.inclineSinr = NaN;
+        this.color = NaN;
 
         if (this.sprite)
         {
@@ -340,7 +343,7 @@ export default class Judgeline
             if (event.endTime < currentTime) continue;
             if (event.startTime > currentTime) break;
 
-            this.sprite.tint = event.value;
+            this.color = this.sprite.tint = event.value;
         }
 
         for (const event of this.extendEvent.incline)
@@ -370,9 +373,12 @@ export default class Judgeline
         this.sprite.position.y = (0.5 - this.y) * size.height;
         this.sprite.alpha      = this.alpha >= 0 ? this.alpha : 0;
         this.sprite.rotation   = this.deg;
+        this.sprite.visible    = (this.alpha > 0);
 
+        /*
         if (this.sprite.alpha <= 0) this.sprite.visible = false;
         else this.sprite.visible = true;
+        */
         
         /*
         this.sprite.width = this._width * this.scaleX;

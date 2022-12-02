@@ -18,6 +18,11 @@ module.exports = {
         path: path.resolve(__dirname, 'dist'),
         filename: 'script.js'
     },
+    resolve: {
+        alias: {
+            '@': path.join(__dirname, './src')
+        }
+    },
     devServer: {
         allowedHosts:["gz1.mossfrp.cn"],
         client: {

@@ -1,3 +1,4 @@
+import { number as verifyNum } from '@/verify';
 import * as Convert from './convert';
 import utils from './convert/utils';
 import { Sprite, Graphics, Text } from 'pixi.js-legacy';
@@ -8,21 +9,23 @@ export default class Chart
     {
         this.judgelines = [];
         this.notes      = [];
-        this.offset     = !isNaN(parseFloat(params.offset)) ? parseFloat(params.offset) : 0;
+        this.bpmList    = [];
+        this.offset     = verifyNum(params.offset, 0);
 
         this.music      = params.music ? params.music : null;
         this.bg         = params.bg ? params.bg : null;
 
         this.info       = {
-            name      : params.name ? params.name : 'Untitled',
-            artist    : params.artist ? params.artist : 'Unknown',
-            author    : params.author ? params.author : 'Unknown',
-            bgAuthor  : params.bgAuthor ? params.bgAuthor : 'Unknown',
-            difficult : params.difficult ? params.difficult : 'SP Lv.?'
+            name      : params.name,
+            artist    : params.artist,
+            author    : params.author,
+            bgAuthor  : params.bgAuthor,
+            difficult : params.difficult
         };
 
         this.sprites = {};
         this.noteJudgeCallback = null;
+        this.holdBetween = 0.15;
     }
 
     static from(rawChart, _chartInfo = {}, _chartLineTexture = [])
@@ -50,11 +53,11 @@ export default class Chart
         if (!chart) throw new Error('Unsupported chart format');
 
         chart.info = {
-            name      : chartInfo.name ? chartInfo.name : 'Untitled',
-            artist    : chartInfo.artist ? chartInfo.artist : 'Unknown',
-            author    : chartInfo.author ? chartInfo.author : 'Unknown',
-            bgAuthor  : chartInfo.bgAuthor ? chartInfo.bgAuthor : 'Unknown',
-            difficult : chartInfo.difficult ? chartInfo.difficult : 'SP Lv.?'
+            name      : chartInfo.name,
+            artist    : chartInfo.artist,
+            author    : chartInfo.author,
+            bgAuthor  : chartInfo.bgAuthor,
+            difficult : chartInfo.difficult
         };
 
         chart.judgelines.forEach((judgeline) =>
@@ -79,36 +82,43 @@ export default class Chart
             judgeline.sortEvent();
         });
 
-        _chartLineTexture.forEach((lineInfo) =>
-        {
-            if (!chart.judgelines[lineInfo.LineId]) return;
-
-            chart.judgelines[lineInfo.LineId].texture = lineInfo.Image;
-            chart.judgelines[lineInfo.LineId].useOfficialScale = true;
-            chart.judgelines[lineInfo.LineId].scaleX = !isNaN(lineInfo.Horz) ? parseFloat(lineInfo.Horz) : 1;
-            chart.judgelines[lineInfo.LineId].scaleY = !isNaN(lineInfo.Vert) ? parseFloat(lineInfo.Vert) : 1;
-
-            chart.judgelines[lineInfo.LineId].extendEvent.scaleX.push({
-                startTime: 1 - 1000,
-                endTime: 1000,
-                start: chart.judgelines[lineInfo.LineId].scaleX,
-                end: chart.judgelines[lineInfo.LineId].scaleX
-            });
-
-            chart.judgelines[lineInfo.LineId].extendEvent.scaleY.push({
-                startTime: 1 - 1000,
-                endTime: 1000,
-                start: chart.judgelines[lineInfo.LineId].scaleY,
-                end: chart.judgelines[lineInfo.LineId].scaleY
-            });
-        });
+        chart.readLineTextureInfo(_chartLineTexture);
 
         // console.log(chart);
         return chart;
     }
 
+    readLineTextureInfo(infos = [])
+    {
+        infos.forEach((lineInfo) =>
+        {
+            if (!this.judgelines[lineInfo.LineId]) return;
+
+            this.judgelines[lineInfo.LineId].texture = lineInfo.Image;
+            this.judgelines[lineInfo.LineId].useOfficialScale = true;
+            this.judgelines[lineInfo.LineId].scaleX = !isNaN(lineInfo.Horz) ? parseFloat(lineInfo.Horz) : 1;
+            this.judgelines[lineInfo.LineId].scaleY = !isNaN(lineInfo.Vert) ? parseFloat(lineInfo.Vert) : 1;
+
+            this.judgelines[lineInfo.LineId].extendEvent.scaleX.push({
+                startTime: 1 - 1000,
+                endTime: 1000,
+                start: this.judgelines[lineInfo.LineId].scaleX,
+                end: this.judgelines[lineInfo.LineId].scaleX
+            });
+
+            this.judgelines[lineInfo.LineId].extendEvent.scaleY.push({
+                startTime: 1 - 1000,
+                endTime: 1000,
+                start: this.judgelines[lineInfo.LineId].scaleY,
+                end: this.judgelines[lineInfo.LineId].scaleY
+            });
+        });
+    }
+
     createSprites(stage, size, textures, zipFiles = {}, speed = 1, bgDim = 0.5, multiNoteHL = true, debug = false)
     {
+        let linesWithZIndex = [];
+
         if (this.bg)
         {
             this.sprites.bg = new Sprite(this.bg);
@@ -136,7 +146,9 @@ export default class Chart
 
             judgeline.sprite.position.x = size.width / 2;
             judgeline.sprite.position.y = size.height / 2;
-            judgeline.sprite.zIndex = index + 1;
+            judgeline.sprite.zIndex = 10 + index;
+
+            if (!isNaN(judgeline.zIndex)) linesWithZIndex.push(judgeline);
 
             stage.addChild(judgeline.sprite);
             if (judgeline.debugSprite)
@@ -155,11 +167,19 @@ export default class Chart
                 judgeline.useOfficialScale = false;
             }
         });
+
+        linesWithZIndex.sort((a, b) => a.zIndex - b.zIndex);
+        linesWithZIndex.forEach((judgeline, index) =>
+        {
+            judgeline.sprite.zIndex = 10 + this.judgelines.length + index;
+            if (judgeline.debugSprite) judgeline.debugSprite.zIndex = 999 + judgeline.sprite.zIndex;
+        });
+
         this.notes.forEach((note, index) =>
         {
             note.createSprite(textures, zipFiles, multiNoteHL, debug);
 
-            note.sprite.zIndex = this.judgelines.length + (note.type === 3 ? index : index + 10) + 1;
+            note.sprite.zIndex = 10 + (this.judgelines.length + linesWithZIndex.length) + (note.type === 3 ? index : index + 10);
 
             stage.addChild(note.sprite);
             if (note.debugSprite)
@@ -171,7 +191,7 @@ export default class Chart
 
         this.sprites.info = {};
 
-        this.sprites.info.songName = new Text(this.info.name + ((Math.round(speed * 100) !== 100) ? ' (x' + speed.toFixed(2) + ')' : ''), {
+        this.sprites.info.songName = new Text((this.info.name || 'Untitled') + ((Math.round(speed * 100) !== 100) ? ' (x' + speed.toFixed(2) + ')' : ''), {
             fontFamily: 'A-OTF Shin Go Pr6N H',
             fill: 0xFFFFFF
         });
@@ -181,7 +201,7 @@ export default class Chart
         stage.addChild(this.sprites.info.songName);
 
 
-        this.sprites.info.songDiff = new Text(this.info.difficult, {
+        this.sprites.info.songDiff = new Text((this.info.difficult || 'SP Lv.?'), {
             fontFamily: 'MiSans',
             fill: 0xFFFFFF
         });
@@ -265,6 +285,14 @@ export default class Chart
 
     calcTime(currentTime)
     {
+        for (const bpm of this.bpmList)
+        {
+            if (bpm.endTime < currentTime) continue;
+            if (bpm.startTime > currentTime) break;
+
+            this.holdBetween = bpm.holdBetween;
+        };
+
         for (const judgeline of this.judgelines)
         {
             judgeline.calcTime(currentTime, this.renderSize);
@@ -278,6 +306,8 @@ export default class Chart
 
     reset()
     {
+        this.holdBetween = this.bpmList[0].holdBetween;
+
         this.judgelines.forEach((judgeline) =>
         {
             judgeline.reset();

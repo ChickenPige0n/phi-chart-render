@@ -74,12 +74,12 @@
                 由于安卓火狐浏览器的一些性能问题，考虑使用 <a href="https://github.com/kiwibrowser/src.next/releases" target="_blank">Kiwi Browser</a> 或 <a href="https://viayoo.com/" target="_blank">Via</a> 或 <a href="https://www.google.com/chrome/" target="_blank">Google Chrome</a>.
             </div>
             <hr />
-            <label>选择一个 .zip 或 .pez 文件: <input type="file" id="file-chart-pack" disabled></label><br>
+            <label>选择一个 .zip 或 .pez 文件: <input type="file" id="file-chart-pack" multiple disabled></label><br>
             <div class="loading" id="file-read-progress">请等待素材加载完毕...</div>
             <hr />
-            <label>谱面: <select id="file-chart"><option disabled selected>请先选择一个文件...</option></select></label><br>
-            <label>歌曲: <select id="file-music"><option disabled selected>请先选择一个文件...</option></select></label><br>
-            <label>背景图片: <select id="file-bg"><option disabled selected>请先选择一个文件...</option></select></label>
+            <label>谱面: <select id="file-chart"></select></label><br>
+            <label>歌曲: <select id="file-music"></select></label><br>
+            <label>背景图片: <select id="file-bg"></select></label>
             <hr />
             <div class="loading" id="loading-status">加载脚本中...</div>
             <button id="start" disabled>开始</button>

@@ -31,10 +31,11 @@ Huge thanks to [@lchzh3473](https://github.com/lchzh3473) and his awesome [sim-p
     * [x] Judgeline cover type
     * [x] Parent judgeline
     * [x] Easing start/end point
+    * [x] judgeline z order *(Need test)*
     * [ ] Event link group *(?)*
-    * [ ] judgeline z order
     * [ ] BPM factor *(?)*
     * [ ] Note controls *(?)*
+    * [ ] ~~attachUI (wont support)~~
     * Extend events
        * [x] Scale X
        * [x] Scale Y
@@ -63,6 +64,19 @@ You must have a Node.js enviorment to helping development.
 All of the materials are from [Ph1gr0s-Emulator](https://github.com/MisaWorkGroup/Ph1gr0s-Emulator).
 
 Any unauthorized use of these materials is __*NOT*__ allowed.
+
+## Thanks
+
+* [pixijs](https://github.com/pixijs/pixijs)
+* [howler.js](https://github.com/goldfire/howler.js)
+* [@lchzh3473](https://github.com/lchzh3473)
+* [@luch4736](https://github.com/luch4736)
+* [@Naptie](https://github.com/Naptie)
+* [@Greenball233](https://github.com/Greenball233)
+* [@inokana](https://github.com/GBTP)
+* [@totorowldox](https://github.com/totorowldox)
+* [All contributors](https://github.com/MisaLiu/phi-chart-render/graphs/contributors)
+* And you
 
 ## License
 ```

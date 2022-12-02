@@ -1,3 +1,5 @@
+import { number as verifyNum } from '@/verify';
+
 const calcBetweenTime = 0.125; // 1/32
 
 /**
@@ -46,9 +48,9 @@ function valueCalculator(event, Easings, currentTime, easingsOffset = 1)
     let timePercentStart = (currentTime - event.startTime) / (event.endTime - event.startTime);
     let timePercentEnd = 1 - timePercentStart;
     let easeFunction = Easings[event.easingType - easingsOffset] ? Easings[event.easingType - easingsOffset] : Easings[0];
-    let easePercent = easeFunction((!isNaN(event.easingLeft) ? event.easingLeft : 0) * timePercentEnd + (!isNaN(event.easingRight) ? event.easingRight : 1) * timePercentStart);
-    let easePercentStart = easeFunction(!isNaN(event.easingLeft) ? event.easingLeft : 0);
-    let easePercentEnd = easeFunction(!isNaN(event.easingRight) ? event.easingRight : 1);
+    let easePercent = easeFunction(verifyNum(event.easingLeft, 0, 0, 1) * timePercentEnd + verifyNum(event.easingRight, 1, 0, 1) * timePercentStart);
+    let easePercentStart = easeFunction(verifyNum(event.easingLeft, 0, 0, 1));
+    let easePercentEnd = easeFunction(verifyNum(event.easingRight, 1, 0, 1));
 
     easePercent = (easePercent - easePercentStart) / (easePercentEnd - easePercentStart);
 
@@ -140,6 +142,65 @@ function calculateEventEase(event, Easings, easingsOffset = 1, forceLinear = fal
 }
 
 /**
+ * 计算一组 BPM 的 HoldBetween 值
+ * 
+ * @param {Array} _bpmList 欲用于计算的 BPM 数组
+ * @return {Array} 计算完毕的 BPM 数组
+ */
+function calculateHoldBetween(_bpmList)
+{
+    let bpmList = _bpmList.slice();
+    let result = [];
+
+    bpmList.sort((a, b) => a.startTime - b.startTime);
+    bpmList.forEach((bpm) =>
+    {
+        if (result.length <= 0)
+        {
+            result.push({
+                startTime   : bpm.startTime,
+                endTime     : bpm.startTime,
+                bpm         : bpm.bpm,
+                holdBetween : ((-1.2891 * bpm.bpm) + 396.71) / 1000
+            });
+        }
+        else
+        {
+            result[result.length - 1].endTime = bpm.startTime;
+
+            if (result[result.length - 1].bpm != bpm.bpm)
+            {
+                result.push({
+                    startTime   : bpm.startTime,
+                    endTime     : bpm.startTime,
+                    bpm         : bpm.bpm,
+                    holdBetween : ((-1.2891 * bpm.bpm) + 396.71) / 1000
+                });
+            }
+        }
+    });
+
+    result.sort((a, b) => a.startTime - b.startTime);
+
+    if (result.length > 0)
+    {
+        result[0].startTime = 1 - 1000;
+        result[result.length - 1].endTime = 1e4;
+    }
+    else
+    {
+        result.push({
+            startTime   : 1 - 1000,
+            endTime     : 1e4,
+            bpm         : 120,
+            holdBetween : 0.242018
+        });
+    }
+
+    return result;
+}
+
+/**
  * 合并一组事件中值相同的事件
  * 
  * @param {Array} _events 欲合并相同值的事件组
@@ -204,6 +265,7 @@ export default {
     calculateRealTime,
 
     calculateEventEase,
+    calculateHoldBetween,
 
     arrangeSameValueEvent,
     arrangeSameSingleValueEvent

@@ -1,7 +1,5 @@
 import { Text, Container } from 'pixi.js-legacy';
 
-const getTime = () => performance ? performance.now() : Date.now();
-
 export default class Score
 {
     constructor(notesCount = 0, showAPStatus = true, isChallengeMode = false, autoPlay = false)
@@ -44,16 +42,6 @@ export default class Score
 
         if (this.sprites)
         {
-            this.sprites.score.oldValue = 0;
-            this.sprites.score.addedValue = 0;
-            this.sprites.score.currentValue = 0;
-            this.sprites.score.valueChangedTime = NaN;
-
-            this.sprites.acc.oldValue = 0;
-            this.sprites.acc.addedValue = 0;
-            this.sprites.acc.currentValue = 0;
-            this.sprites.acc.valueChangedTime = NaN;
-
             this.sprites.combo.number.text = '0';
             this.sprites.acc.text = 'ACCURACY 0.00%';
             this.sprites.score.text = '0000000';
@@ -108,47 +96,6 @@ export default class Score
         this.sprites.score.anchor.set(1, 0);
         this.sprites.score.zIndex = 99999;
         stage.addChild(this.sprites.score);
-
-        this.sprites.score.currentValue = 0;
-        this.sprites.acc.currentValue = 0;
-    }
-
-    calcTick()
-    {
-        if (!isNaN(this.sprites.score.valueChangedTime))
-        {
-            this.sprites.score.currentValue = Math.round(
-                this.sprites.score.oldValue + this.sprites.score.addedValue
-            );
-
-            if (this.sprites.score.currentValue >= (this.sprites.score.oldValue + this.sprites.score.addedValue))
-            {
-                this.sprites.score.currentValue = this.sprites.score.oldValue + this.sprites.score.addedValue;
-                this.sprites.score.valueChangedTime = NaN;
-            }
-
-            this.sprites.score.text = fillZero(this.sprites.score.currentValue, 7);
-        }
-
-        if (!isNaN(this.sprites.acc.valueChangedTime))
-        {
-            this.sprites.acc.currentValue = (
-                this.sprites.acc.oldValue + (
-                    this.sprites.acc.addedValue * ((getTime() - this.sprites.acc.valueChangedTime) / 400)
-                )
-            );
-
-            if (
-                this.sprites.acc.currentValue === (this.sprites.acc.oldValue + this.sprites.acc.addedValue) ||
-                (this.sprites.acc.addedValue > 0 && this.sprites.acc.currentValue > (this.sprites.acc.oldValue + this.sprites.acc.addedValue)) ||
-                (this.sprites.acc.addedValue < 0 && this.sprites.acc.currentValue < (this.sprites.acc.oldValue + this.sprites.acc.addedValue))
-            ) {
-                this.sprites.acc.currentValue = this.sprites.acc.oldValue + this.sprites.acc.addedValue;
-                this.sprites.acc.valueChangedTime = NaN;
-            }
-
-            this.sprites.acc.text = 'ACCURACY ' + (this.sprites.acc.currentValue * 100).toFixed(2) + '%';
-        }
     }
 
     resizeSprites(size, isEnded)
@@ -197,6 +144,7 @@ export default class Score
                         {
                             for (const judgeline of judgelines)
                             {
+                                if (!isNaN(judgeline.color)) return;
                                 if (!judgeline.sprite) return;
                                 judgeline.sprite.tint = 0xB4E1FF;
                             };
@@ -219,6 +167,7 @@ export default class Score
                     {
                         for (const judgeline of judgelines)
                         {
+                            if (!isNaN(judgeline.color)) return;
                             if (!judgeline.sprite) return;
                             judgeline.sprite.tint = 0xFFFFFF;
                         };
@@ -263,15 +212,8 @@ export default class Score
             }
             this.sprites.combo.number.text = this.combo;
 
-            // this.sprites.acc.text = 'ACCURACY ' + (this.acc * 100).toFixed(2) + '%';
-            this.sprites.acc.oldValue = this.sprites.acc.currentValue;
-            this.sprites.acc.addedValue = this.acc - this.sprites.acc.oldValue;
-            this.sprites.acc.valueChangedTime = getTime();
-
-            // this.sprites.score.text = fillZero((this.score).toFixed(0));
-            this.sprites.score.oldValue = this.sprites.score.currentValue;
-            this.sprites.score.addedValue = this.score - this.sprites.score.oldValue;
-            this.sprites.score.valueChangedTime = getTime();
+            this.sprites.acc.text = 'ACCURACY ' + (this.acc * 100).toFixed(2) + '%';
+            this.sprites.score.text = fillZero((this.score).toFixed(0), 7);
 
 
             this.sprites.combo.text.position.x = this.sprites.combo.container.width/2;
