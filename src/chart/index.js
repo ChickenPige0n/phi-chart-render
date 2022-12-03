@@ -274,9 +274,9 @@ export default class Chart
             });
         }
 
-        this.sprites.info.songName.style.fontSize = size.heightPercent * 40;
-        this.sprites.info.songName.position.x = size.heightPercent * 50;
-        this.sprites.info.songName.position.y = size.height - size.heightPercent * 25;
+        this.sprites.info.songName.style.fontSize = size.heightPercent * 36;
+        this.sprites.info.songName.position.x = size.heightPercent * 42.5;
+        this.sprites.info.songName.position.y = size.height - size.heightPercent * 26;
 
         this.sprites.info.songDiff.style.fontSize = size.heightPercent * 36;
         this.sprites.info.songDiff.position.x = size.width-size.heightPercent * 43;

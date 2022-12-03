@@ -218,7 +218,7 @@ export default class Game
             for (const judgeline of this.chart.judgelines)
             {
                 if (!judgeline.sprite) continue;
-                judgeline.sprite.tint = 0xEDECB0;
+                judgeline.sprite.tint = 0xFFECA0;
             };
         }
 
@@ -264,7 +264,7 @@ export default class Game
         this.sprites.fakeJudgeline = new Sprite(this.assets.textures.judgeline);
         this.sprites.fakeJudgeline.anchor.set(0.5);
         this.sprites.fakeJudgeline.zIndex = 99999;
-        if (this._settings.showAPStatus) this.sprites.fakeJudgeline.tint = 0xEDECB0;
+        if (this._settings.showAPStatus) this.sprites.fakeJudgeline.tint = 0xFFECA0;
         this.render.mainContainer.addChild(this.sprites.fakeJudgeline);
 
         if (this._settings.showFPS)
@@ -402,9 +402,11 @@ export default class Game
         this.chart.music.once('play', () => { this._audioTimer.start() });
 
         this.render.ticker.add(this._calcTick);
-        if (this._settings.showAPStatus) this.sprites.fakeJudgeline.tint = 0xEDECB0;
+        if (this._settings.showAPStatus) this.sprites.fakeJudgeline.tint = 0xFFECA0;
         this.sprites.fakeJudgeline.visible = true;
-        this.sprites.progressBarHead.x=-200;
+
+        this.sprites.progressBar.scale.x=0;
+        this.sprites.progressBarHead.x=0;
 
         for (const judgeline of this.chart.judgelines)
         {

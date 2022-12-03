@@ -105,23 +105,23 @@ export default class Score
         if (!this.sprites) return;
 
         this.sprites.combo.number.style.fontSize = size.heightPercent * 73;
-        this.sprites.combo.text.style.fontSize = size.heightPercent * 37;
+        this.sprites.combo.text.style.fontSize = size.heightPercent * 30;
 
         this.sprites.acc.style.fontSize = size.heightPercent * 20;
 
-        this.sprites.score.style.fontSize = size.heightPercent * 50;
+        this.sprites.score.style.fontSize = size.heightPercent * 55;
 
         this.sprites.combo.container.position.x = size.width/2-this.sprites.combo.container.width/2;
         this.sprites.combo.container.position.y = size.heightPercent * 7;
         this.sprites.combo.number.position.x = this.sprites.combo.container.width/2;
         this.sprites.combo.text.position.x = this.sprites.combo.container.width/2;
-        this.sprites.combo.text.position.y = size.heightPercent * 82;
+        this.sprites.combo.text.position.y = size.heightPercent * 77;
 
         this.sprites.acc.position.x = size.heightPercent * 7299;
         this.sprites.acc.position.y = size.heightPercent * 11399;
 
-        this.sprites.score.position.x = size.width - size.heightPercent * 40;
-        this.sprites.score.position.y = size.heightPercent * 26;
+        this.sprites.score.position.x = size.width - size.heightPercent * 37;
+        this.sprites.score.position.y = size.heightPercent * 24;
     }
 
     pushJudge(type = 0, judgelines = [])

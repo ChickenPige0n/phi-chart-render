@@ -170,13 +170,13 @@ export default class Judgement
     createClickAnimate(note)
     {
         let anim = new AnimatedSprite(note.score >= 3 ? this.textures.normal : this.textures.bad),
-            baseScale = this.renderSize.noteScale * 5.6;
+            baseScale = this.renderSize.noteScale * 6.3;
 
         if (note.score >= 3 && note.type != 3) anim.position.set(note.sprite.judgelineX, note.sprite.judgelineY);
         else anim.position.copyFrom(note.sprite.position);
 
         anim.scale.set((note.score >= 3 ? this._clickAnimBaseScale.normal : this._clickAnimBaseScale.bad) * baseScale);
-        anim.tint = note.score === 4 ? 0xEDECB0 : note.score === 3 ? 0xB4E1FF : 0x6c4343;
+        anim.tint = note.score === 4 ? 0xFFECA0 : note.score === 3 ? 0xB4E1FF : 0x6c4343;
 
         anim.loop = false;
 
