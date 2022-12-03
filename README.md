@@ -34,7 +34,6 @@ Huge thanks to [@lchzh3473](https://github.com/lchzh3473) and his awesome [sim-p
     * [x] judgeline z order *(Need test)*
     * [ ] Event link group *(?)*
     * [ ] BPM factor *(?)*
-    * [ ] Note controls *(?)*
     * [ ] ~~attachUI (wont support)~~
     * Extend events
        * [x] Scale X
@@ -43,6 +42,12 @@ Huge thanks to [@lchzh3473](https://github.com/lchzh3473) and his awesome [sim-p
        * [x] Color
        * [x] Incline
        * [ ] ~~Draw (wont support)~~
+    * Note controls *(Need test)*
+       * [x] Alpha
+       * [x] Scale
+       * [ ] Skew
+       * [x] X
+       * [ ] Y
     * note features
         * [x] Basic support
         * [x] Fake note support
