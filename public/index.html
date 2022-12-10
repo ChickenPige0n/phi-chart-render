@@ -66,7 +66,82 @@
     <body>
         <div class="file-select">
             <div>
-                <b>如果你是IOS用户:</b><br>
+                <b style=" font-size:xx-large; background-image: -webkit-linear-gradient(bottom, #114514, #1f1e33); -webkit-background-clip: text; -webkit-text-fill-color: transparent; ">Phi-chart-render by misaliu</b><br />
+                <b style=" font-size:xx-small; background-image: -webkit-linear-gradient(bottom, #114514, #1f1e33); -webkit-background-clip: text; -webkit-text-fill-color: transparent; ">this is a modified version by ChickenPige0n</b>
+            </div>
+            <hr />
+            <label>选择一个 .zip 或 .pez 文件: <input type="file" id="file-chart-pack" multiple disabled></label><br>
+            <div class="loading" id="file-read-progress">请等待素材加载完毕...</div>
+            <hr />
+            <label>谱面: <select id="file-chart"></select></label>
+            <label>歌曲: <select id="file-music"></select></label>
+            <label>背景图片: <select id="file-bg"></select></label>
+            <hr />
+            <div class="loading" id="loading-status">加载脚本中...</div>
+            <button id="start" disabled class="start" style="background-color:lawngreen; border-radius: 15px;">开始</button>
+
+
+            <br>
+            <fieldset>
+                <legend>播放设置</legend><br>
+                <label><input type="checkbox" id="settings-challenge-mode" />挑战模式</label>
+                <br>
+                <label><input type="checkbox" id="settings-autoplay" />AutoPlay</label>
+                <br>
+
+                <label>
+                    <input type="checkbox" id="settings-hitsound" checked />开启打击音
+                </label>
+                <br>
+
+                <label>谱面速度: <input type="range" id="settings-audio-speed" min="0.25" max="1.75" step="0.25" value="1"></label>
+
+                <br>
+                <label>打击音音量: <input type="range" id="settings-hitsound-volume" min="0" max="1" step="0.01" value="1"></label>
+                <br>
+            </fieldset>
+
+            <fieldset>
+                <legend>显示设置</legend>
+                <label><input type="checkbox" id="settings-multi-note-hl" checked />高亮等时音符</label>
+                <br>
+                <label><input type="checkbox" id="settings-show-ap-status" checked />FC/AP指示器</label>
+                <br>
+                <label><input type="checkbox" id="settings-show-input-point" />显示触摸位置</label>
+                <br>
+                <label>Note大小: <input type="range" id="settings-note-scale" min="0" max="4000" value="2000"></label>
+                <br>
+                <label>背景变暗: <input type="range" id="settings-bg-dim" min="0" max="1" step="0.01" value="0.5"></label>
+                <br>
+                <label>背景模糊: <input type="range" id="settings-bg-blur" min="0" max="100" value="50" /></label>
+            </fieldset>
+
+            <br>
+            <br />
+            <fieldset style="height:130px">
+                <legend>音频相关</legend>
+                <label>音频偏移: <input type="number" id="settings-audio-offset" placeholder="0" style="width:4em" />ms</label>
+                <br>
+                <div style="margin-left:20px">(对于Chrome或基于Chrome的浏览器，建议 -100ms)</div>
+                <button id="settings-test-input-delay">点击这个按钮以测试输入延迟...</button><br>
+            </fieldset>
+
+            <fieldset style="height:130px">
+                <legend>渲染相关</legend>
+                <label>
+                    <input type="checkbox" id="settings-force-canvas" />强制使用canvas渲染器
+                </label>
+                <br>
+                <label><input type="checkbox" id="settings-anti-alias" checked />抗锯齿</label>
+                <br>
+                <label><input type="checkbox" id="settings-low-resolution" />低分辨率模式</label>
+                <br>
+                <label><input type="checkbox" id="settings-debug" />Debug</label><br>
+            </fieldset>
+
+            <hr />
+            <div>
+                <b>如果你使用的是IOS:</b><br>
                 <span>请使用夸克浏览器以获得更好的体验(不是广告)</span>
             </div>
             <hr />
@@ -74,42 +149,11 @@
                 由于安卓火狐浏览器的一些性能问题，考虑使用 <a href="https://github.com/kiwibrowser/src.next/releases" target="_blank">Kiwi Browser</a> 或 <a href="https://viayoo.com/" target="_blank">Via</a> 或 <a href="https://www.google.com/chrome/" target="_blank">Google Chrome</a>.
             </div>
             <hr />
-            <label>选择一个 .zip 或 .pez 文件: <input type="file" id="file-chart-pack" multiple disabled></label><br>
-            <div class="loading" id="file-read-progress">请等待素材加载完毕...</div>
-            <hr />
-            <label>谱面: <select id="file-chart"></select></label><br>
-            <label>歌曲: <select id="file-music"></select></label><br>
-            <label>背景图片: <select id="file-bg"></select></label>
-            <hr />
-            <div class="loading" id="loading-status">加载脚本中...</div>
-            <button id="start" disabled>开始</button>
-            <hr />
-            <label><input type="checkbox" id="settings-multi-note-hl" checked />高亮等时音符</label><br>
-            <label><input type="checkbox" id="settings-show-ap-status" checked />FC/AP指示器</label><br>
-            <label><input type="checkbox" id="settings-show-input-point" />显示触摸位置</label><br>
-            <label>Note大小: <input type="range" id="settings-note-scale" min="0" max="4000" value="2000"></label><br>
-            <label>背景变暗: <input type="range" id="settings-bg-dim" min="0" max="1" step="0.01" value="0.5"></label><br>
-            <label>背景模糊: <input type="range" id="settings-bg-blur" min="0" max="100" value="50" /></label>
-            <hr />
-            <label>音频偏移: <input type="number" id="settings-audio-offset" placeholder="0" style="width:4em" />ms</label><br>
-            <div style="margin-left:20px">(对于Chrome或基于Chrome的浏览器，建议 -100ms)</div>
-            <button id="settings-test-input-delay">点击这个按钮以测试输入延迟...</button><br>
-            <label>谱面速度: <input type="range" id="settings-audio-speed" min="0.25" max="1.75" step="0.25" value="1"></label><br>
-            <hr />
-            <label><input type="checkbox" id="settings-hitsound" checked />开启打击音</label><br>
-            <label>打击音音量: <input type="range" id="settings-hitsound-volume" min="0" max="1" step="0.01" value="1"></label><br>
-            <hr />
-            <label><input type="checkbox" id="settings-challenge-mode" />挑战模式</label><br>
-            <label><input type="checkbox" id="settings-autoplay" />AutoPlay</label><br>
-            <label>
-                <input type="checkbox" id="settings-force-canvas" />强制使用canvas渲染器
-                <div style="margin-left:20px"><i>(may get better performance on some devices/browsers,<br>disabled if your device/browser doesn't support WebGL)</i></div>
-            </label>
-            <label><input type="checkbox" id="settings-anti-alias" checked />抗锯齿</label><br>
-            <label><input type="checkbox" id="settings-low-resolution" />低分辨率模式</label><br>
-            <label><input type="checkbox" id="settings-debug" />Debug</label><br>
-            <hr />
-            此版本是被ChickenPige0n修改过的版本,原作者为MisaLiu.</br>
+
+
+            <br>
+
+            此版本是被<a href="https://github.com/ChickenPige0n/" target="_blank">ChickenPige0n</a>修改过的版本,原作者为<a href="https://github.com/MisaLiu/" target="_blank">MisaLiu</a>.<br>
             GitHub 首页: <a href="https://github.com/ChickenPige0n/phi-chart-render" target="_blank">当前分支地址</a> 或 <a href="https://github.com/MisaLiu/phi-chart-render" target="_blank">原项目地址</a><br>
             <a href="https://github.com/ChickenPige0n/phi-chart-render/issues/new/choose" target="_blank">在这</a>汇报bug
             <hr />
