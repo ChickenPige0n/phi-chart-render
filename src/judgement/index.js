@@ -113,8 +113,9 @@ export default class Judgement
         this.input.tap.length = 0;
         this.input.calcTick();
 
-        for (const particle of this.clickParticleContainer.children)
+        for (let i = 0, length = this.clickParticleContainer.children.length; i < length; i++)
         {
+            const particle = this.clickParticleContainer.children[i];
             if (!particle) break;
             const currentTimeProgress = (Date.now() - particle.startTime) / 500;
             
@@ -141,9 +142,9 @@ export default class Judgement
 
         if (!this._autoPlay)
         {
-            for (const tap of this.input.tap)
+            for (let i = 0, length = this.input.tap.length; i < length; i++)
             {
-                if (tap instanceof InputPoint) this.judgePoints.push(new JudgePoint(tap, 1));
+                if (this.input.tap[i] instanceof InputPoint) this.judgePoints.push(new JudgePoint(this.input.tap[i], 1));
             }
 
             for (const id in this.input.inputs)
@@ -328,7 +329,7 @@ function calcNoteJudge(currentTime, note)
     {
         case 1:
         {
-            for (let i = 0; i < this.judgePoints.length; i++)
+            for (let i = 0, length = this.judgePoints.length; i < length; i++)
             {
                 if (
                     this.judgePoints[i].type === 1 &&
@@ -368,7 +369,7 @@ function calcNoteJudge(currentTime, note)
             }
             else if (!note.isScored)
             {
-                for (let i = 0; i < this.judgePoints.length; i++)
+                for (let i = 0, length = this.judgePoints.length; i < length; i++)
                 {
                     if (
                         this.judgePoints[i].isInArea(notePosition.x, notePosition.y, judgeline.cosr, judgeline.sinr, this.renderSize.noteWidth) &&
@@ -407,7 +408,7 @@ function calcNoteJudge(currentTime, note)
                 }
             }
 
-            for (let i = 0; i < this.judgePoints.length; i++)
+            for (let i = 0, length = this.judgePoints.length; i < length; i++)
             {
                 if (
                     !note.isScored &&
@@ -459,7 +460,7 @@ function calcNoteJudge(currentTime, note)
             }
             else if (!note.isScored)
             {
-                for (let i = 0; i < this.judgePoints.length; i++)
+                for (let i = 0, length = this.judgePoints.length; i < length; i++)
                 {
                     if (
                         this.judgePoints[i].type === 2 &&

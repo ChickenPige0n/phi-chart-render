@@ -7,10 +7,11 @@ export default class Chart
 {
     constructor(params = {})
     {
-        this.judgelines = [];
-        this.notes      = [];
-        this.bpmList    = [];
-        this.offset     = verifyNum(params.offset, 0);
+        this.judgelines          = [];
+        this.notes               = [];
+        this.bpmList             = [];
+        this.offset              = verifyNum(params.offset, 0);
+        this.isLineTextureReaded = false;
 
         this.music      = params.music ? params.music : null;
         this.bg         = params.bg ? params.bg : null;
@@ -74,9 +75,9 @@ export default class Chart
             for (const name in judgeline.extendEvent)
             {
                 if (name !== 'color' && name !== 'text')
-                    judgeline.extendEvent[name] = utils.arrangeSameValueEvent(judgeline.extendEvent[name]);
+                    judgeline.extendEvent[name] = arrangeLineEvents(judgeline.extendEvent[name]);
                 else
-                    judgeline.extendEvent[name] = utils.arrangeSameSingleValueEvent(judgeline.extendEvent[name]);
+                    judgeline.extendEvent[name] = arrangeSingleValueLineEvents(judgeline.extendEvent[name]);
             }
             
             judgeline.sortEvent();
@@ -90,6 +91,11 @@ export default class Chart
 
     readLineTextureInfo(infos = [])
     {
+        if (this.isLineTextureReaded) return;
+        if (infos.length <= 0) return;
+
+        let isReaded = false;
+
         infos.forEach((lineInfo) =>
         {
             if (!this.judgelines[lineInfo.LineId]) return;
@@ -112,7 +118,11 @@ export default class Chart
                 start: this.judgelines[lineInfo.LineId].scaleY,
                 end: this.judgelines[lineInfo.LineId].scaleY
             });
+
+            isReaded = true;
         });
+
+        if (isReaded) this.isLineTextureReaded = true;
     }
 
     createSprites(stage, size, textures, zipFiles = {}, speed = 1, bgDim = 0.5, multiNoteHL = true, debug = false)
@@ -242,7 +252,7 @@ export default class Chart
                 }
                 else
                 {
-                    judgeline.baseScaleX = (this.renderSize.width / judgeline.sprite.texture.width) * 3;
+                    judgeline.baseScaleX = (4000 / judgeline.sprite.texture.width) * (this.renderSize.width / 1350);
                     judgeline.baseScaleY = ((this.renderSize.lineScale * 18.75 * 0.008) / judgeline.sprite.texture.height);
                 }
 
@@ -250,6 +260,14 @@ export default class Chart
 
                 judgeline.sprite.position.x = judgeline.x * this.renderSize.width;
                 judgeline.sprite.position.y = judgeline.y * this.renderSize.height;
+
+                for (const name in judgeline.noteControls)
+                {
+                    for (const control of judgeline.noteControls[name])
+                    {
+                        control.y = control._y * size.height
+                    }
+                }
 
                 if (isEnded) judgeline.sprite.alpha = 0;
                 if (judgeline.debugSprite) judgeline.debugSprite.scale.set(this.renderSize.heightPercent);
@@ -285,22 +303,24 @@ export default class Chart
 
     calcTime(currentTime)
     {
-        for (const bpm of this.bpmList)
+        for (let i = 0, length = this.bpmList.length; i < length; i++)
         {
+            let bpm = this.bpmList[i];
+
             if (bpm.endTime < currentTime) continue;
             if (bpm.startTime > currentTime) break;
 
             this.holdBetween = bpm.holdBetween;
         };
 
-        for (const judgeline of this.judgelines)
+        for (let i = 0, length = this.judgelines.length; i < length; i++)
         {
-            judgeline.calcTime(currentTime, this.renderSize);
+            this.judgelines[i].calcTime(currentTime, this.renderSize);
         };
-        for (const note of this.notes)
+        for (let i = 0, length = this.notes.length; i < length; i++)
         {
-            note.calcTime(currentTime, this.renderSize);
-            if (this.noteJudgeCallback) this.noteJudgeCallback(currentTime, note);
+            this.notes[i].calcTime(currentTime, this.renderSize);
+            if (this.noteJudgeCallback) this.noteJudgeCallback(currentTime, this.notes[i]);
         };
     }
 
@@ -393,7 +413,9 @@ function arrangeLineEvents(events) {
         start     : oldEvents[0] ? oldEvents[0].start : 0,
         end       : oldEvents[0] ? oldEvents[0].start : 0
     }];
-    
+
+    if (events.length <= 0) return [];
+
     oldEvents.push({ // 以 1000 结束
         startTime : 0,
         endTime   : 1e3,
@@ -439,35 +461,6 @@ function arrangeLineEvents(events) {
                 });
             }
         }
-        
-        /*
-        if (lastNewEvent.endTime > oldEvent.endTime)
-        {
-            // 忽略此分支
-        }
-        else if (lastNewEvent.endTime == oldEvent.startTime)
-        {
-            newEvents.push(oldEvent);
-        }
-        else if (lastNewEvent.endTime < oldEvent.startTime)
-        {
-            newEvents.push({
-                startTime : lastNewEvent.endTime,
-                endTime   : oldEvent.startTime,
-                start     : lastNewEvent.end,
-                end       : lastNewEvent.end
-            }, oldEvent);
-        }
-        else if (lastNewEvent.endTime > oldEvent.startTime)
-        {
-            newEvents.push({
-                startTime : lastNewEvent.endTime,
-                endTime   : oldEvent.endTime,
-                start     : (oldEvent.start * (oldEvent.endTime - lastNewEvent.endTime) + oldEvent.end * (lastNewEvent.endTime - oldEvent.startTime)) / (oldEvent.endTime - oldEvent.startTime),
-                end       : lastNewEvent.end
-            });
-        }
-        */
     }
     
     // 合并相同变化率事件
@@ -495,5 +488,44 @@ function arrangeLineEvents(events) {
         }
     }
     
+    return newEvents.slice();
+}
+
+
+function arrangeSingleValueLineEvents(events) {
+    let oldEvents = events.slice();
+    let newEvents = [ oldEvents.shift() ];
+
+    if (events.length <= 0) return [];
+
+    // 保证时间连续性
+    for (let oldEvent of oldEvents)
+    {
+        let lastNewEvent = newEvents[newEvents.length - 1];
+
+        if (oldEvent.endTime < oldEvent.startTime)
+        {
+            let newStartTime = oldEvent.endTime,
+                newEndTime = oldEvent.startTime;
+            
+                oldEvent.startTime = newStartTime;
+                oldEvent.endTime = newEndTime;
+        }
+
+        if (lastNewEvent.value == oldEvent.value)
+        {
+            lastNewEvent.endTime = oldEvent.endTime;
+        }
+        else if (lastNewEvent.endTime < oldEvent.startTime || lastNewEvent.endTime > oldEvent.startTime)
+        {
+            lastNewEvent.endTime = oldEvent.startTime;
+            newEvents.push(oldEvent);
+        }
+        else
+        {
+            newEvents.push(oldEvent);
+        }
+    }
+
     return newEvents.slice();
 }
