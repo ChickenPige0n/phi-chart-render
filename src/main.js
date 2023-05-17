@@ -1,7 +1,6 @@
-import Game from './game';
-import Chart from './chart';
+export { default as Game } from './game';
+export { default as Chart } from './chart';
 
-export {
-    Game,
-    Chart
-};
+export { default as WAudio } from './audio';
+export { default as Effect } from './effect';
+export { default as Shader } from './effect/shader';

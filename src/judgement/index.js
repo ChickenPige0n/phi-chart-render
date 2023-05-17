@@ -3,7 +3,7 @@ import Input from './input';
 import Score from './score';
 import InputPoint from './input/point';
 import JudgePoint from './point';
-import { Container, AnimatedSprite, Texture, Sprite  } from 'pixi.js-legacy';
+import { ParticleContainer, AnimatedSprite, Texture, Sprite  } from 'pixi.js';
 
 const particleCountPerClickAnim = 4;
 
@@ -85,7 +85,12 @@ export default class Judgement
 
     createSprites(showInputPoint = true)
     {
-        this.clickParticleContainer = new Container();
+        this.clickParticleContainer = new ParticleContainer(1500, {
+            vertices: true,
+            position: true,
+            scale: true,
+            tint: true
+        });
         this.clickParticleContainer.zIndex = 99999;
         this.stage.addChild(this.clickParticleContainer);
 
@@ -110,7 +115,6 @@ export default class Judgement
     {
         this.createJudgePoints();
 
-        this.input.tap.length = 0;
         this.input.calcTick();
 
         for (let i = 0, length = this.clickParticleContainer.children.length; i < length; i++)
@@ -142,18 +146,13 @@ export default class Judgement
 
         if (!this._autoPlay)
         {
-            for (let i = 0, length = this.input.tap.length; i < length; i++)
+            for (let i = 0, length = this.input.inputs.length; i < length; i++)
             {
-                if (this.input.tap[i] instanceof InputPoint) this.judgePoints.push(new JudgePoint(this.input.tap[i], 1));
-            }
+                let inputPoint = this.input.inputs[i];
 
-            for (const id in this.input.inputs)
-            {
-                if (this.input.inputs[id] instanceof InputPoint)
-                {
-                    if (this.input.inputs[id].isFlickable && !this.input.inputs[id].isFlicked) this.judgePoints.push(new JudgePoint(this.input.inputs[id], 2));
-                    else this.judgePoints.push(new JudgePoint(this.input.inputs[id], 3));
-                }
+                if (!inputPoint.isTapped) this.judgePoints.push(new JudgePoint(inputPoint, 1));
+                if (inputPoint.isActive) this.judgePoints.push(new JudgePoint(inputPoint, 3));
+                if (inputPoint.isFlickable && !inputPoint.isFlicked) this.judgePoints.push(new JudgePoint(inputPoint, 2));
             }
         }
     }

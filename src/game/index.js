@@ -1,9 +1,9 @@
 import * as verify from '@/verify';
 import Judgement from '@/judgement';
-import Timer from './timer';
 import * as TickerFunc from './ticker';
 import * as CallbackFunc from './callback';
-import { Application, Container, Texture, Sprite, Graphics, Text, Rectangle, settings as PIXISettings, Ticker } from 'pixi.js-legacy';
+import { Shader } from '@/main';
+import { Application, Container, Texture, Sprite, Graphics, Text, Rectangle, settings as PIXISettings } from 'pixi.js';
 
 PIXISettings.RENDER_OPTIONS.hello = true;
 
@@ -15,25 +15,13 @@ const ProgressBarCache = (() =>
     canvas.width = 1920;
     canvas.height = 12;
     ctx.clearRect(0, 0, 1920, 12);
-    ctx.fillStyle = '#919191';
+    ctx.fillStyle = '#FFFFFF';
     ctx.fillRect(0, 0, 1920, 12);
 
-    return Texture.from(canvas);
-})();
+    const result = Texture.from(canvas);
+    Texture.addToCache(result, 'progressBar');
 
-
-const ProgressBarHeadCache = (() =>
-{
-    const canvas = document.createElement('canvas');
-    const ctx = canvas.getContext('2d');
-
-    canvas.width = 2;
-    canvas.height = 12;
-    ctx.clearRect(0, 0, 4, 12);
-    ctx.fillStyle = '#FFFFFF';
-    ctx.fillRect(0, 0, 4, 12);
-
-    return Texture.from(canvas);
+    return result;
 })();
 
 /**
@@ -44,12 +32,12 @@ const ProgressBarHeadCache = (() =>
   *         resolution?,
   *         autoDensity?,
   *         antialias?,
-  *         forceCanvas?,
   *         view?,
   *         resizeTo?
   *     },
   *     chart,
   *     assets,
+  *     effects?,
   *     zipFiles?,
   *     watermark?,
   *     settings: {
@@ -57,13 +45,12 @@ const ProgressBarHeadCache = (() =>
   *         hitsound?,
   *         hitsoundVolume?,
   *         speed?,
-  *         Scale?,
+  *         noteScale?,
   *         bgDim?,
   *         multiNoteHL?,
   *         showInputPoint?,
   *         challengeMode?,
   *         autoPlay?,
-  *         forceCanvas?,
   *         debug?
   *     }
   * }
@@ -80,6 +67,7 @@ export default class Game
         /* ===== 加载谱面基本信息 ===== */
         this.chart    = params.chart;
         this.assets   = params.assets;
+        this.effects  = (!!params.settings.shader && params.effects instanceof Array && params.effects.length > 0) ? params.effects : [];
         this.zipFiles = params.zipFiles;
 
         if (!this.chart) throw new Error('You must select a chart to play');
@@ -93,7 +81,6 @@ export default class Game
             resolution      : verify.number(params.render.resolution, window.devicePixelRatio, 1),
             autoDensity     : verify.bool(params.render.autoDensity, true),
             antialias       : verify.bool(params.render.antialias, true),
-            forceCanvas     : verify.bool(params.render.forceCanvas, false),
             view            : params.render.canvas ? params.render.canvas : undefined,
             backgroundAlpha : 1
         });
@@ -104,6 +91,16 @@ export default class Game
         this.render.mainContainer.zIndex = 10;
         this.render.stage.addChild(this.render.mainContainer);
 
+        // 创建游戏精灵容器
+        this.render.gameContainer = new Container();
+        this.render.gameContainer.zIndex = 20;
+        this.render.mainContainer.addChild(this.render.gameContainer);
+
+        // 创建 UI 容器
+        this.render.UIContainer = new Container();
+        this.render.UIContainer.zIndex = 30;
+        this.render.mainContainer.addChild(this.render.UIContainer);
+
         // 创建舞台主渲染区可见范围
         this.render.mainContainerMask = new Graphics();
         this.render.mainContainerMask.cacheAsBitmap = true;
@@ -111,7 +108,7 @@ export default class Game
         /* ===== 创建判定 ===== */
         this.judgement = new Judgement({
             chart          : this.chart,
-            stage          : this.render.mainContainer,
+            stage          : this.render.UIContainer,
             canvas         : this.render.view,
             assets         : {
                 textures : { normal: this.assets.textures.clickRaw, bad: this.assets.textures.clickRaw },
@@ -131,12 +128,18 @@ export default class Game
         this.sprites = {};
         this.functions = {
             start: [],
+            tick: [],
             pause: [],
             end: []
+        };
+        this.processors = {
+            judgeline: [],
+            note: []
         };
 
         /* ===== 用户设置暂存 ===== */
         this._settings = {
+            resolution     : verify.number(params.render.resolution, window.devicePixelRatio, 1),
             noteScale      : verify.number(params.settings.noteScale, 8000),
             bgDim          : verify.number(params.settings.bgDim, 0.5, 0, 1),
             offset         : verify.number(params.settings.audioOffset, 0),
@@ -147,19 +150,19 @@ export default class Game
             showAPStatus   : verify.bool(params.settings.showAPStatus, true),
             challengeMode  : verify.bool(params.settings.challengeMode, false),
             autoPlay       : verify.bool(params.settings.autoPlay, false),
-            debug          : verify.bool(params.settings.debug, false)
+            debug          : verify.bool(params.settings.debug, false),
+            shader         : verify.bool(params.settings.shader, true)
         };
 
-        this._watermarkText = 'phi-chart-render by MisaLiu(Modified by ChickenPige0n)';
+        this._watermarkText = verify.text(params.watermark, 'github/MisaLiu/phi-chart-render');
 
-        this._musicId = null;
-        this._audioTimer = new Timer(this._settings.speed, (this.chart.offset + this._settings.offset));
         this._audioOffset = 0;
         this._animateStatus = NaN;
         this._gameStartTime = NaN;
         this._gameEndTime   = NaN;
         this._isPaused = false;
         this._isEnded = false;
+        this._currentEffects = [];
 
         this.resize = this.resize.bind(this);
 
@@ -193,7 +196,7 @@ export default class Game
 
             bgCover.position.x = -this.render.mainContainerCover.width / 2;
             bgCover.position.y = -this.render.mainContainerCover.height / 2;
-            bgCover.alpha = 0.8;
+            bgCover.alpha = 0.5;
 
             this.render.mainContainerCover.zIndex = 1;
             this.render.mainContainerCover.addChild(bgCover);
@@ -203,9 +206,10 @@ export default class Game
         }
 
         this.chart.createSprites(
-            this.render.mainContainer,
+            this.render.gameContainer,
             this.render.sizer,
             this.assets.textures,
+            this.render.UIContainer,
             this.zipFiles,
             this._settings.speed,
             this._settings.bgDim,
@@ -222,26 +226,23 @@ export default class Game
             };
         }
 
-        this.judgement.stage = this.render.mainContainer;
+        this.judgement.stage = this.render.UIContainer;
         this.judgement.createSprites(this._settings.showInputPoint);
 
         // 进度条
-        this.sprites.progressBarHead = new Sprite(ProgressBarHeadCache);
         this.sprites.progressBar = new Sprite(ProgressBarCache);
         this.sprites.progressBar.width = 0;
-        this.sprites.progressBar.alpha = 1;
+        this.sprites.progressBar.alpha = 0.75;
         this.sprites.progressBar.zIndex = 99999;
-        this.sprites.progressBar.alpha = 1;
-        this.sprites.progressBar.zIndex = 99999;
-        this.render.mainContainer.addChild(this.sprites.progressBar);
-        this.render.mainContainer.addChild(this.sprites.progressBarHead);
+        this.render.UIContainer.addChild(this.sprites.progressBar);
 
         // 暂停按钮
         this.sprites.pauseButton = new Sprite(this.assets.textures.pauseButton);
 
-        this.sprites.pauseButton.interactive = true;
+        // this.sprites.pauseButton.interactive = true;
+        this.sprites.pauseButton.eventMode = 'static';
         this.sprites.pauseButton.buttonMode = true;
-        this.sprites.pauseButton.cursor = 'pointer';
+        // this.sprites.pauseButton.cursor = 'pointer';
         this.sprites.pauseButton.on('pointerdown', this._pauseBtnClickCallback);
 
         this.sprites.pauseButton.hitArea = new Rectangle(
@@ -255,17 +256,17 @@ export default class Game
         this.sprites.pauseButton.isEndRendering = false;
         this.sprites.pauseButton.lastRenderTime = Date.now();
 
-        this.sprites.pauseButton.anchor.set(0, 0);
-        this.sprites.pauseButton.alpha = 1;
+        this.sprites.pauseButton.anchor.set(1, 0);
+        this.sprites.pauseButton.alpha = 0.5;
         this.sprites.pauseButton.zIndex = 99999;
-        this.render.mainContainer.addChild(this.sprites.pauseButton);
+        this.render.UIContainer.addChild(this.sprites.pauseButton);
 
         // 假判定线，过场动画用
         this.sprites.fakeJudgeline = new Sprite(this.assets.textures.judgeline);
         this.sprites.fakeJudgeline.anchor.set(0.5);
         this.sprites.fakeJudgeline.zIndex = 99999;
         if (this._settings.showAPStatus) this.sprites.fakeJudgeline.tint = 0xFFECA0;
-        this.render.mainContainer.addChild(this.sprites.fakeJudgeline);
+        this.render.UIContainer.addChild(this.sprites.fakeJudgeline);
 
         if (this._settings.showFPS)
         {
@@ -275,10 +276,10 @@ export default class Game
                 fill: 0xFFFFFF
             });
             this.render.fpsText.anchor.x = 1;
-            this.render.fpsText.alpha = 1;
+            this.render.fpsText.alpha = 0.5;
             this.render.fpsText.zIndex = 999999;
 
-            this.render.mainContainer.addChild(this.render.fpsText);
+            this.render.UIContainer.addChild(this.render.fpsText);
         }
 
         this.render.watermark = new Text(this._watermarkText, {
@@ -291,29 +292,52 @@ export default class Game
         this.render.watermark.zIndex = 999999;
         this.render.mainContainer.addChild(this.render.watermark);
 
+        this.render.gameContainer.sortChildren();
+        this.render.UIContainer.sortChildren();
         this.render.mainContainer.sortChildren();
         this.render.stage.sortChildren();
 
-        // 预播放 hitsound，也许能减轻打击未打击过的某类 note 时的卡顿问题？
-        for (const name in this.judgement.sounds)
+        // 加载 Shaders
+        this.effects.forEach((effect) =>
         {
-            this.judgement.sounds[name].load();
-            /*
-            this.judgement.sounds[name].volume(0);
-            this.judgement.sounds[name].play();
-            */
-        }
+            if (effect.shader instanceof Shader) return;
+            if (!effect.shader || typeof effect.shader !== 'string')
+            {
+                effect.shader = null;
+                return;
+            }
+
+            const shaderName = effect.shader;
+            let shader = null;
+
+            if (shaderName.indexOf('/') === 0)
+            {
+                const shaderNameReal = shaderName.substr(1);
+                if (this.zipFiles[shaderNameReal]) shader = this.zipFiles[shaderNameReal];
+            }
+            else if (Shader.presets[shaderName])
+            {
+                shader = new Shader(Shader.presets[shaderName], shaderName);
+            }
+
+            effect.shader = shader;
+            
+            if (!effect.shader)
+            {
+                console.log('\'' + shaderName + '\' not found, will be ignored');
+                effect.shader = null;
+            }
+        });
     }
 
     start()
     {
         if (!this.render) return;
         if (!this.chart.music) throw new Error('You must have a music to play');
-        if (this._musicId) throw new Error('You have already started');
 
         this.resize();
-        this.render.ticker.minFPS = 60;
-        this.render.ticker.maxFPS = 60;
+        for (const effect of this.effects) effect.reset();
+
         if (this.render.fpsText)
         {
             this.render.fpsCounter = setInterval(() =>
@@ -322,9 +346,8 @@ export default class Game
             }, 500);
         }
 
-        this.chart.music.rate(this._settings.speed);
-        this.chart.music.once('play', () => { this._audioTimer.start() });
-        this.chart.music.on('end', this._gameEndCallback);
+        this.chart.music.speed = this._settings.speed;
+        this.chart.music.onend = this._gameEndCallback;
 
         this._animateStatus = 0;
         this._gameStartTime = Date.now();
@@ -332,7 +355,6 @@ export default class Game
         this.chart.noteJudgeCallback = this.judgement.calcNote;
         this.render.ticker.add(this._calcTick);
 
-        this.chart.calcTime(0);
         for (const judgeline of this.chart.judgelines)
         {
             if (!judgeline.sprite) continue;
@@ -346,12 +368,12 @@ export default class Game
 
             note.sprite.alpha = 0;
             if (note.debugSprite) note.debugSprite.visible = false;
-            if (note.hitsound) note.hitsound.volume(this.judgement._hitsoundVolume);
+            if (note.hitsound) note.hitsound.volume = this.judgement._hitsoundVolume;
         };
 
         for (const name in this.judgement.sounds)
         {
-            this.judgement.sounds[name].volume(this.judgement._hitsoundVolume);
+            this.judgement.sounds[name].volume = this.judgement._hitsoundVolume;
         }
     }
 
@@ -360,37 +382,27 @@ export default class Game
         this._isPaused = !this._isPaused;
         this.judgement.input._isPaused = this._isPaused;
 
-        if (!this._musicId) return;
-
         if (this._isPaused)
         {
             this.chart.music.pause();
             this._runCallback('pause');
-            this._audioTimer.pause();
-
-            this.chart.music.once('play', () => { this._audioTimer.pause() });
         }
         else
         {
-            this.chart.music.play(this._musicId);
+            this.chart.music.play(true);
         }
     }
 
     restart()
     {
-        if (!this._musicId) return;
-
         this.render.ticker.remove(this._calcTick);
-        this.chart.music.stop();
-        this.chart.music.off('play');
-        this._audioTimer.reset();
-        this._musicId = null;
+        this.chart.music.reset();
 
         this.chart.reset();
         this.judgement.reset();
 
         this.resize();
-        this.chart.calcTime(0);
+        for (const effect of this.effects) effect.reset();
 
         this._isPaused = false;
         this._isEnded = false;
@@ -399,14 +411,9 @@ export default class Game
         this._gameStartTime = Date.now();
         this._gameEndTime   = NaN;
 
-        this.chart.music.once('play', () => { this._audioTimer.start() });
-
         this.render.ticker.add(this._calcTick);
         if (this._settings.showAPStatus) this.sprites.fakeJudgeline.tint = 0xFFECA0;
         this.sprites.fakeJudgeline.visible = true;
-
-        this.sprites.progressBar.scale.x=0;
-        this.sprites.progressBarHead.x=0;
 
         for (const judgeline of this.chart.judgelines)
         {
@@ -430,10 +437,7 @@ export default class Game
         const canvas = this.render.view;
 
         this.render.ticker.remove(this._calcTick);
-        this.chart.music.stop();
-        this.chart.music.off('play');
-        this.chart.music.off('end');
-        this._audioTimer.reset();
+        this.chart.music.reset();
 
         if (this.render.fpsText) clearInterval(this.render.fpsCounter);
 
@@ -458,6 +462,12 @@ export default class Game
         this.functions[type].push(callback);
     }
 
+    addProcessor(type, callback)
+    {
+        if (!this.processors[type]) return;
+        if (!(callback instanceof Function)) return;
+        this.processors[type].push(callback);
+    }
 
     resize(withChartSprites = true, shouldResetFakeJudgeLine = true)
     {
@@ -466,7 +476,7 @@ export default class Game
         this.render.renderer.resize(this.render.parentNode.clientWidth, this.render.parentNode.clientHeight);
 
         // 计算新尺寸相关数据
-        this.render.sizer = calcResizer(this.render.screen.width, this.render.screen.height, this._settings.noteScale);
+        this.render.sizer = calcResizer(this.render.screen.width, this.render.screen.height, this._settings.noteScale, this._settings.resolution);
 
         // 主舞台区位置重计算
         this.render.mainContainer.position.x = this.render.sizer.widthOffset;
@@ -508,19 +518,16 @@ export default class Game
             if (this.sprites.progressBar)
             {
                 this.sprites.progressBar.position.set(0, 0);
-                this.sprites.progressBarHead.scale.y = this.render.sizer.heightPercent;
                 this.sprites.progressBar.scale.y = this.render.sizer.heightPercent;
                 this.sprites.progressBar.baseScaleX = this.render.sizer.width / this.sprites.progressBar.texture.baseTexture.width;
             }
 
             if (this.sprites.pauseButton)
             {
-                this.sprites.pauseButton.position.x = this.render.sizer.heightPercent * 35;
-                this.sprites.pauseButton.position.y = this.render.sizer.heightPercent * 40;
-                this.sprites.pauseButton.scale.set(this.render.sizer.heightPercent * 0.60);
+                this.sprites.pauseButton.position.x = this.render.sizer.width - this.render.sizer.heightPercent * 72;
+                this.sprites.pauseButton.position.y = this.render.sizer.heightPercent * (61 + 14);
+                this.sprites.pauseButton.scale.set(0.94 * this.render.sizer.heightPercent);
             }
-
-
 
             if (this.sprites.fakeJudgeline)
             {
@@ -557,11 +564,17 @@ export default class Game
             this.chart.resizeSprites(this.render.sizer, this._isEnded);
         }
     }
+
+    gameTimeInSec() {
+        return (Date.now() - this._gameStartTime) / 1000;
+    }
 }
 
-function calcResizer(width, height, noteScale = 8000)
+function calcResizer(width, height, noteScale = 8000, resolution = window.devicePixelRatio)
 {
     let result = {};
+
+    result.shaderScreenSize = [ width * resolution, height * resolution ];
 
     result.width  = height / 9 * 16 < width ? height / 9 * 16 : width;
     result.height = height;

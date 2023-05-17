@@ -20,7 +20,6 @@ function calcTick()
                 pauseButton.alpha = 1;
                 pauseButton.lastRenderTime = Date.now();
             }
-            pauseButton.alpha = 1;
         }
         else if (pauseButton.clickCount === 0 && pauseButton.isEndRendering)
         {
@@ -34,7 +33,6 @@ function calcTick()
                 pauseButton.lastRenderTime = Date.now();
                 pauseButton.isEndRendering = false;
             }
-            pauseButton.alpha = 1;
         }
     }
 
@@ -47,12 +45,59 @@ function calcTick()
         }
         case 1:
         {
-            this.chart.calcTime(this._audioTimer.time);
-            this.judgement._holdBetween = this.chart.holdBetween;
-            if (!this._isPaused) this.judgement.calcTick();
+            let { chart, effects, judgement, functions, processors, sprites, render, _settings: settings } = this;
+            let currentTime = chart.music.currentTime - (chart.offset + settings.offset);
 
-            this.sprites.progressBar.scale.x = (this._audioTimer.time / this.chart.music._duration) * this.sprites.progressBar.baseScaleX;
-            this.sprites.progressBarHead.position.x = (this._audioTimer.time / this.chart.music._duration) * this.render.sizer.width;
+            for (let i = 0, length = chart.bpmList.length; i < length; i++)
+            {
+                let bpm = chart.bpmList[i];
+
+                if (bpm.endTime < currentTime) continue;
+                if (bpm.startTime > currentTime) break;
+
+                judgement._holdBetween = bpm.holdBetween;
+            };
+
+            for (let i = 0, length = chart.judgelines.length; i < length; i++)
+            {
+                const judgeline = chart.judgelines[i];
+                judgeline.calcTime(currentTime, render.sizer);
+                for (let x = 0, length = processors.judgeline.length; x < length; x++) processors.judgeline[x](judgeline, currentTime);
+            };
+            for (let i = 0, length = chart.notes.length; i < length; i++)
+            {
+                const note = chart.notes[i];
+                note.calcTime(currentTime, render.sizer);
+                for (let x = 0, length = processors.note.length; x < length; x++) processors.note[x](note, currentTime);
+                judgement.calcNote(currentTime, note);
+            };
+
+            if (!this._isPaused)
+            {
+                judgement.calcTick();
+                for (let x = 0, length = functions.tick.length; x < length; x++) functions.tick[x](this, currentTime);
+
+                if (settings.shader)
+                {
+                    render.gameContainer.filters = [];
+                    render.stage.filters = [];
+
+                    for (let i = 0, length = effects.length; i < length; i++)
+                    {
+                        const effect = effects[i];
+                        if (effect.shader === null) continue;
+                        if (effect.endTime < currentTime) continue;
+                        if (effect.startTime > currentTime) break;
+
+                        effect.calcTime(currentTime, render.sizer.shaderScreenSize);
+                        if (effect.isGlobal) render.stage.filters.push(effect.shader);
+                        else render.gameContainer.filters.push(effect.shader);
+                    }
+                }
+            }
+
+            sprites.progressBar.scale.x = chart.music.progress * sprites.progressBar.baseScaleX;
+
             break;
         }
         case 2:
@@ -77,15 +122,15 @@ function calcGameAnimateTick(isStart = true)
     };
 
     // Combo、准度、分数、暂停按钮和进度条
-    //sprites.score.combo.container.position.y = -(sprites.score.combo.container.height + sprites.score.acc.height) + ((sprites.score.combo.container.height + sprites.score.acc.height + (this.render.sizer.heightPercent * 41)) * progress);
+    sprites.score.combo.container.position.y = -(sprites.score.combo.container.height + sprites.score.acc.height) + ((sprites.score.combo.container.height + sprites.score.acc.height + (this.render.sizer.heightPercent * 41)) * progress);
     sprites.score.acc.position.y = sprites.score.combo.container.position.y + (this.render.sizer.heightPercent * 72);
-    sprites.score.score.position.y = -(sprites.score.score.height) + ((sprites.score.score.height + (this.render.sizer.heightPercent * 24)) * progress);
-    this.sprites.pauseButton.position.y = -(this.sprites.pauseButton.height) + ((this.sprites.pauseButton.height + (this.render.sizer.heightPercent * (40))) * progress);
+    sprites.score.score.position.y = -(sprites.score.score.height) + ((sprites.score.score.height + (this.render.sizer.heightPercent * 61)) * progress);
+    this.sprites.pauseButton.position.y = -(this.sprites.pauseButton.height) + ((this.sprites.pauseButton.height + (this.render.sizer.heightPercent * (61 + 14))) * progress);
     this.sprites.progressBar.position.y = -(this.render.sizer.heightPercent * 12) * (1 - progress);
 
     // 谱面信息
-    sprites.chart.info.songName.position.y = (this.render.sizer.height + sprites.chart.info.songName.height) - ((sprites.chart.info.songName.height + (this.render.sizer.heightPercent * 26)) * progress);
-    sprites.chart.info.songDiff.position.y = sprites.chart.info.songName.position.y-1;
+    sprites.chart.info.songName.position.y = (this.render.sizer.height + sprites.chart.info.songName.height) - ((sprites.chart.info.songName.height + (this.render.sizer.heightPercent * 66)) * progress);
+    sprites.chart.info.songDiff.position.y = sprites.chart.info.songName.position.y + (this.render.sizer.heightPercent * 24);
 
     // 假判定线过场动画
     this.sprites.fakeJudgeline.width = this.render.sizer.width * progress;
@@ -102,8 +147,7 @@ function calcGameAnimateTick(isStart = true)
 
             setTimeout(async () =>
             {
-                this._musicId = this.chart.music.play();
-                // this._audioTimer.start();
+                this.chart.music.play(true);
 
                 for (const judgeline of this.chart.judgelines)
                 {
@@ -130,7 +174,6 @@ function calcGameAnimateTick(isStart = true)
             this._isPaused = true;
             this._isEnded = true;
             this._runCallback('end');
-            this._audioTimer.reset();
         }
     }
 }

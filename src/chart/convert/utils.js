@@ -1,4 +1,5 @@
 import { number as verifyNum } from '@/verify';
+import Bezier from 'bezier-easing';
 
 const calcBetweenTime = 0.125; // 1/32
 
@@ -45,16 +46,26 @@ function valueCalculator(event, Easings, currentTime, easingsOffset = 1)
     if (event.startTime > currentTime) throw new Error('currentTime must bigger than startTime');
     if (event.endTime < currentTime) throw new Error('currentTime must smaller than endTime');
 
-    let timePercentStart = (currentTime - event.startTime) / (event.endTime - event.startTime);
-    let timePercentEnd = 1 - timePercentStart;
-    let easeFunction = Easings[event.easingType - easingsOffset] ? Easings[event.easingType - easingsOffset] : Easings[0];
-    let easePercent = easeFunction(verifyNum(event.easingLeft, 0, 0, 1) * timePercentEnd + verifyNum(event.easingRight, 1, 0, 1) * timePercentStart);
-    let easePercentStart = easeFunction(verifyNum(event.easingLeft, 0, 0, 1));
-    let easePercentEnd = easeFunction(verifyNum(event.easingRight, 1, 0, 1));
+    let timePercentEnd = (currentTime - event.startTime) / (event.endTime - event.startTime);
+    let timePercentStart = 1 - timePercentEnd;
 
-    easePercent = (easePercent - easePercentStart) / (easePercentEnd - easePercentStart);
+    if (event.bezier === 1)
+    {
+        let bezier = Bezier(event.bezierPoints[0], event.bezierPoints[1], event.bezierPoints[2], event.bezierPoints[3]);
+        return event.start * bezier(timePercentStart) + event.end * bezier(timePercentEnd);
+    }
+    else
+    {
+        let easeFunction = Easings[event.easingType - easingsOffset] ? Easings[event.easingType - easingsOffset] : Easings[0];
+        let easePercent = easeFunction(verifyNum(event.easingLeft, 0, 0, 1) * timePercentStart + verifyNum(event.easingRight, 1, 0, 1) * timePercentEnd);
+        let easePercentStart = easeFunction(verifyNum(event.easingLeft, 0, 0, 1));
+        let easePercentEnd = easeFunction(verifyNum(event.easingRight, 1, 0, 1));
 
-    return event.start * (1 - easePercent) + event.end * easePercent;
+        easePercent = (easePercent - easePercentStart) / (easePercentEnd - easePercentStart);
+
+        return event.start * (1 - easePercent) + event.end * easePercent;
+    }
+    
 }
 
 /**
@@ -111,8 +122,13 @@ function calculateEventEase(event, Easings, easingsOffset = 1, forceLinear = fal
     if (!event) return [];
 
     if (
-        event.easingType && Easings[event.easingType - easingsOffset] && (event.easingType - easingsOffset !== 0 || forceLinear) &&
-        event.easingType <= Easings.length &&
+        (
+            event.bezier == 1 ||
+            (
+                event.easingType && Easings[event.easingType - easingsOffset] && (event.easingType - easingsOffset !== 0 || forceLinear) &&
+                event.easingType <= Easings.length
+            )
+        ) &&
         event.start != event.end
     ) {
         for (let timeIndex = 0, timeCount = Math.ceil(timeBetween / calcBetweenTime); timeIndex < timeCount; timeIndex++)

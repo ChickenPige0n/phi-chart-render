@@ -1,17 +1,16 @@
-import 'core-js/stable';
-import 'regenerator-runtime/runtime';
 import * as PhiChartRender from './main';
 import FontFaceObserver from 'fontfaceobserver';
 import JSZip from 'jszip';
-import { Texture, Rectangle, utils as PIXIutils } from 'pixi.js-legacy';
-import { Howl } from 'howler';
+import { Texture, Rectangle } from 'pixi.js';
 import { canvasRGB as StackBlur } from 'stackblur-canvas';
+import Pica from 'pica';
 import * as Sentry from '@sentry/browser';
 import { BrowserTracing } from '@sentry/tracing';
+import './phizone';
 
 (() =>
 {
-    if (GITHUB_CURRENT_GIT_HASH != '{{' + 'CURRENT_HASH' + '}}')
+    if (process.env.NODE_ENV === 'production')
     {
         // Init sentry
         Sentry.init({
@@ -19,12 +18,12 @@ import { BrowserTracing } from '@sentry/tracing';
             integrations: [ new BrowserTracing() ],
             tracesSampleRate: 1.0,
             maxBreadcrumbs: 50,
-            debug: (GITHUB_CURRENT_GIT_HASH == '{{' + 'CURRENT_HASH' + '}}'),
-            release: (GITHUB_CURRENT_GIT_HASH != '{{' + 'CURRENT_HASH' + '}}'),
+            debug: (process.env.NODE_ENV === 'development'),
+            release: (process.env.NODE_ENV === 'production'),
             beforeSend: (event, hint) => {
                 let err = hint.originalException;
 
-                doms.errorWindow.content.innerText = err.stack ? err.stack : err.message ? err.message : err;
+                doms.errorWindow.content.innerText = (err.stack ? err.stack : err.message ? err.message : JSON.stringify(err, null, 4));
                 doms.errorWindow.window.style.display = 'block';
 
                 return event;
@@ -32,7 +31,6 @@ import { BrowserTracing } from '@sentry/tracing';
         });
     }
 })();
-
 
 const qs = (selector) => document.querySelector(selector);
 
@@ -54,14 +52,17 @@ const doms = {
         bg: document.querySelector('select#file-bg')
     },
     settings: {
+        showBG: document.querySelector('input#settings-show-bg'),
         multiNoteHL: document.querySelector('input#settings-multi-note-hl'),
         showAPStatus: document.querySelector('input#settings-show-ap-status'),
         showInputPoint: document.querySelector('input#settings-show-input-point'),
         noteScale: document.querySelector('input#settings-note-scale'),
         bgDim: document.querySelector('input#settings-bg-dim'),
         bgBlur: document.querySelector('input#settings-bg-blur'),
+        bgQuality: document.querySelector('select#settings-bg-quality'),
 
         offset: document.querySelector('input#settings-audio-offset'),
+        useBrowserLatency: document.querySelector('input#settings-use-browser-latency'),
         testInputDelay: document.querySelector('button#settings-test-input-delay'),
         speed: document.querySelector('input#settings-audio-speed'),
 
@@ -69,11 +70,12 @@ const doms = {
         hitsoundVolume: document.querySelector('input#settings-hitsound-volume'),
 
         challengeMode: document.querySelector('input#settings-challenge-mode'),
+        plyndb: document.querySelector('input#settings-plyndb'),
         autoPlay: document.querySelector('input#settings-autoplay'),
-        forceCanvas: document.querySelector('input#settings-force-canvas'),
         antiAlias: document.querySelector('input#settings-anti-alias'),
         lowResolution: document.querySelector('input#settings-low-resolution'),
-        debug: document.querySelector('input#settings-debug')
+        debug: document.querySelector('input#settings-debug'),
+        prprExtra: document.querySelector('input#settings-prpr-extra')
     },
     startBtn : document.querySelector('button#start'),
     loadingStatus : document.querySelector('div#loading-status'),
@@ -98,6 +100,7 @@ const files = {
     images: {},
     infos: [],
     lines: [],
+    shaders: {},
     all: {}
 };
 
@@ -200,223 +203,11 @@ window.assets = assets;
 window.currentFile = currentFile;
 window.fullscreen = fullscreen;
 
-doms.chartPackFile.addEventListener('input', async function ()
+doms.chartPackFile.addEventListener('input', function ()
 {
     if (this.files.length <= 0) return;
-
-    let fileList = [ ...this.files ];
-
-    for (let fileIndex = 0; fileIndex < fileList.length; fileIndex++)
-    {
-        if (!fileList[fileIndex]) continue;
-
-        let file = fileList[fileIndex];
-        let fileFormatSplit = file.name.split('.');
-        let fileFormat = fileFormatSplit[fileFormatSplit.length - 1];
-
-        file.format = fileFormat;
-
-        doms.chartPackFileReadProgress.innerText = 'Loading files: ' + file.name + ' ...(' + (fileIndex + 1) + '/' + fileList.length + ')';
-
-        if (file.name === 'info.csv')
-        {
-            try {
-                let rawText = await readText(file);
-                let infos = CsvReader(rawText);
-
-                files.infos.push(...infos);
-                files.all[file.name] = infos;
-
-            } catch (e) {
-                
-            }
-        }
-        else if (file.name === 'line.csv')
-        {
-            try {
-                let rawText = await readText(file);
-                let lines = CsvReader(rawText);
-
-                files.lines.push(...lines);
-                files.all[file.name] = lines;
-
-            } catch (e) {
-                
-            }
-        }
-        else if (file.name === 'Settings.txt' || file.name === 'info.txt')
-        {
-            try {
-                let rawText = await readText(file);
-                let info = SettingsReader(rawText);
-
-                files.infos.push(info);
-                files.all[file.name] = info;
-
-            } catch (e) {
-                
-            }
-        }
-        else
-        {
-            (await (new Promise(() =>
-            {
-                throw new Error('Just make a promise, plz ignore me');
-            }))
-            .catch(async () =>
-            {
-                let zipFiles = await JSZip.loadAsync(file, { createFolders: false });
-
-                for (const name in zipFiles.files)
-                {
-                    if (zipFiles.files[name].dir) continue;
-
-                    let zipFile = zipFiles.files[name];
-                    let newFile = new File(
-                        [ (await zipFile.async('blob')) ],
-                        name,
-                        {
-                            type: '',
-                            lastModified: zipFile.date
-                        }
-                    );
-
-                    fileList.push(newFile);
-                }
-
-                return;
-            })
-            .catch(async () =>
-            {
-                let imgBitmap = await createImageBitmap(file);
-                let texture = await Texture.from(imgBitmap);
-
-                Texture.addToCache(texture, file.name);
-
-                files.images[file.name] = texture;
-                files.all[file.name] = texture;
-                doms.file.bg.appendChild(createSelectOption(file));
-
-                return;
-            })
-            .catch(async () =>
-            {
-                let audio = await loadAudio(file);
-
-                files.musics[file.name] = audio;
-                files.all[file.name] = audio;
-                doms.file.music.appendChild(createSelectOption(file));
-
-                return;
-            })
-            .catch(async () =>
-            {
-                let chartRaw = await readText(file);
-                let chart;
-
-                try {
-                    chart = JSON.parse(chartRaw);
-                } catch (e) {
-                    chart = chartRaw;
-                }
-
-                chart = PhiChartRender.Chart.from(chart);
-
-                files.charts[file.name] = chart;
-                files.all[file.name] = chart;
-                doms.file.chart.appendChild(createSelectOption(file));
-
-                return;
-            })
-            .catch((e) =>
-            {
-                console.error(e);
-                console.error('Unsupported file: ' + file.name);
-                return;
-            }));
-        }
-    }
-
-    if (doms.file.chart.childNodes.length >= 1 && doms.file.music.childNodes.length >= 1)
-    {
-        doms.file.chart.dispatchEvent(new Event('input'));
-        doms.startBtn.disabled = false;
-    }
-
-    doms.chartPackFileReadProgress.innerText = 'All done!';
-
-    function readText(file)
-    {
-        return new Promise((res, rej) =>
-        {
-            let reader = new FileReader();
-
-            reader.onloadend = () =>
-            {
-                res(reader.result);
-            };
-
-            reader.onerror = (e) =>
-            {
-                rej(e);
-            };
-
-            reader.readAsText(file);
-        });
-    }
-
-    function readDataURL(file)
-    {
-        return new Promise((res, rej) =>
-        {
-            let reader = new FileReader();
-
-            reader.onloadend = () =>
-            {
-                res(reader.result);
-            };
-
-            reader.onerror = (e) =>
-            {
-                rej(e);
-            };
-
-            reader.readAsDataURL(file);
-        });
-    }
-
-    function loadAudio(file)
-    {
-        return new Promise(async (res, rej) =>
-        {
-            let dataUrl = await readDataURL(file);
-            let audio = new Howl({
-                src: dataUrl,
-                format: file.format,
-                preload: true,
-                autoPlay: false,
-                loop: false,
-
-                onload: () =>
-                {
-                    res(audio);
-                },
-                onloaderror: (id, e) =>
-                {
-                    rej(id, e);
-                }
-            });
-
-            audio.load();
-        });
-    }
-
-    function createSelectOption(file)
-    {
-        let option = document.createElement('option');
-        option.innerText = option.value = file.name;
-        return option;
-    }
+    console.log(this.files);
+    loadChartFiles(this.files);
 });
 
 doms.skinPackFile.addEventListener('input', function ()
@@ -471,7 +262,7 @@ doms.skinPackFile.addEventListener('input', function ()
                 })
                 .catch(async () =>
                 {
-                    let audio = await loadAudio(newFile);
+                    let audio = await loadAudio(newFile, false, true);
 
                     if (newFile.name.indexOf('Hitsound-') == 0)
                     {
@@ -517,52 +308,6 @@ doms.skinPackFile.addEventListener('input', function ()
             console.error(e);
         }
     );
-
-    function readDataURL(file)
-    {
-        return new Promise((res, rej) =>
-        {
-            let reader = new FileReader();
-
-            reader.onloadend = () =>
-            {
-                res(reader.result);
-            };
-
-            reader.onerror = (e) =>
-            {
-                rej(e);
-            };
-
-            reader.readAsDataURL(file);
-        });
-    }
-
-    function loadAudio(file)
-    {
-        return new Promise(async (res, rej) =>
-        {
-            let dataUrl = await readDataURL(file);
-            let audio = new Howl({
-                src: dataUrl,
-                format: file.format,
-                preload: true,
-                autoPlay: false,
-                loop: false,
-
-                onload: () =>
-                {
-                    res(audio);
-                },
-                onloaderror: (id, e) =>
-                {
-                    rej(id, e);
-                }
-            });
-
-            audio.load();
-        });
-    }
 });
 
 doms.file.chart.addEventListener('input', function () {
@@ -624,11 +369,15 @@ doms.startBtn.addEventListener('click', async () => {
     if (!zipFiles['HoldEnd.png']) zipFiles['HoldEnd.png'] = assets.textures.holdEnd;
 
     currentFile.chart.music = currentFile.music;
-    if (currentFile.bg)
+    if (currentFile.bg && doms.settings.showBG.checked)
     {
-        let bgBlur = await Texture.from(await blurImage(currentFile.bg, doms.settings.bgBlur.value));
+        let bgBlur = await Texture.from(await blurImage(await resizeImage(currentFile.bg, parseInt(doms.settings.bgQuality.value)), doms.settings.bgBlur.value));
         Texture.addToCache(bgBlur, doms.file.bg.value + '_blured');
         currentFile.chart.bg = bgBlur;
+    }
+    else
+    {
+        currentFile.chart.bg = null;
     }
 
     if (files.infos && files.infos.length > 0)
@@ -666,12 +415,12 @@ doms.startBtn.addEventListener('click', async () => {
     window._game = new PhiChartRender.Game({
         chart: currentFile.chart,
         assets: assets,
+        effects: files.effects,
         zipFiles: zipFiles,
         render: {
             resizeTo: document.documentElement,
             resolution: doms.settings.lowResolution.checked ? 1 : window.devicePixelRatio,
-            antialias: doms.settings.antiAlias.checked,
-            forceCanvas: doms.settings.forceCanvas.checked
+            antialias: doms.settings.antiAlias.checked
         },
         settings: {
             multiNoteHL: doms.settings.multiNoteHL.checked,
@@ -680,7 +429,7 @@ doms.startBtn.addEventListener('click', async () => {
             bgDim: doms.settings.bgDim.value,
             noteScale: 10000 - doms.settings.noteScale.value,
 
-            audioOffset: doms.settings.offset.value / 1000,
+            audioOffset: doms.settings.offset.value / 1000 + (doms.settings.useBrowserLatency.checked ? PhiChartRender.WAudio.globalLatency : 0),
             speed: doms.settings.speed.value,
 
             hitsound: doms.settings.hitsound.checked,
@@ -688,9 +437,10 @@ doms.startBtn.addEventListener('click', async () => {
 
             challengeMode: doms.settings.challengeMode.checked,
             autoPlay: doms.settings.autoPlay.checked,
-            debug : doms.settings.debug.checked
+            debug: doms.settings.debug.checked,
+            shader: doms.settings.prprExtra.checked
         },
-        watermark: 'github/MisaLiu/phi-chart-render ' + GITHUB_CURRENT_GIT_HASH
+        watermark: 'github/MisaLiu/phi-chart-render ' + GIT_VERSION + (process.env.NODE_ENV === 'development' ? ' [Develop Mode]' : '')
     });
 
     document.body.appendChild(_game.render.view);
@@ -705,6 +455,8 @@ doms.startBtn.addEventListener('click', async () => {
         console.log('Game ended!');
         showGameResultPopup(game);
     });
+
+    if (doms.settings.plyndb.checked) _game.on('tick', PlayLikeYouNeverDidBefore);
 
     _game.createSprites();
     _game.start();
@@ -794,7 +546,7 @@ window.addEventListener('load', async () =>
         { name: 'pauseButton', url: './assets/pauseButton.png' }
     ]));
 
-    (await (async (resources = []) =>
+    (await (async (resources = [], options = {}) =>
     {
         for (const resource of resources)
         {
@@ -803,9 +555,7 @@ window.addEventListener('load', async () =>
             try
             {
                 let res = await requestFile(resource.url);
-                let dataUrl = await readDataURL(res);
-                let audio = await decodeAudio(dataUrl);
-
+                let audio = await loadAudio(res, false, options.noTimer);
 
                 if (!assets.sounds) assets.sounds = {};
                 assets.sounds[resource.name] = audio;
@@ -819,7 +569,7 @@ window.addEventListener('load', async () =>
         { name: 'tap', url: './assets/sounds/Hitsound-Tap.ogg' },
         { name: 'drag', url: './assets/sounds/Hitsound-Drag.ogg' },
         { name: 'flick', url: './assets/sounds/Hitsound-Flick.ogg' }
-    ]));
+    ], { noTimer: true }));
 
     (await (async (resources = [], options = {}) =>
     {
@@ -830,9 +580,7 @@ window.addEventListener('load', async () =>
             try
             {
                 let res = await requestFile(resource.url);
-                let dataUrl = await readDataURL(res);
-                let audio = await decodeAudio(dataUrl, options);
-
+                let audio = await loadAudio(res, options.loop, options.noTimer);
 
                 if (!assets.sounds.result) assets.sounds.result = {};
                 assets.sounds.result[resource.name] = audio;
@@ -849,7 +597,7 @@ window.addEventListener('load', async () =>
         { name: 'at', url: './assets/sounds/result/at.ogg' },
         { name: 'sp', url: './assets/sounds/result/sp.ogg' },
         { name: 'spGlitch', url: './assets/sounds/result/sp_glitch.ogg' },
-    ], { loop: true }));
+    ], { loop: true, noTimer: true }));
 
     doms.loadingStatus.innerText = 'All done!';
     doms.chartPackFileReadProgress.innerText = 'No chart pack file selected';
@@ -857,12 +605,6 @@ window.addEventListener('load', async () =>
     doms.skinPackFile.disabled = false;
 
     calcHeightPercent();
-
-    if (!PIXIutils.isWebGLSupported())
-    {
-        doms.settings.forceCanvas.checked = true;
-        doms.settings.forceCanvas.disabled = true;
-    }
 
     doms.settings.testInputDelay.testTimes = 0;
     doms.settings.testInputDelay.testDelays = 0;
@@ -876,6 +618,45 @@ window.addEventListener('load', async () =>
     });
 
     doms.playResult.scoreBar.addEventListener('click', () => doms.playResult.accBar.classList.toggle('show'));
+
+    {
+        let listTabs = document.querySelectorAll('div.tab div.bar > *');
+        let listTabContents = document.querySelectorAll('div.tab div.content > *[id^="tab-"]');
+
+        for (const tab of listTabs)
+        {
+            tab.addEventListener('click', switchTab);
+        }
+
+        for (let i = 0; i < listTabContents.length; i++)
+        {
+            let content = listTabContents[i];
+            if (i === 0) content.style.display = 'block';
+            else content.style.display = 'none';
+        }
+    }
+
+    if (process.env.NODE_ENV === 'production')
+    {
+        fetch('https://www.googletagmanager.com/gtag/js?id=G-PW9YT2TVFV')
+            .then(res => res.text())
+            .then(res =>
+            {
+                eval(res);
+                window.dataLayer = window.dataLayer || [];
+                window.gtag = function() {dataLayer.push(arguments);};
+                gtag('js', new Date());
+                gtag('config', 'G-PW9YT2TVFV');
+            })
+            .catch(e =>
+            {
+                console.error('Failed to load Google Analytics');
+                console.error(e);
+            }
+        );
+    }
+
+    initConsoleEasterEgg();
 
     function requestFile(url)
     {
@@ -902,52 +683,41 @@ window.addEventListener('load', async () =>
             xhr.send();
         });
     }
-
-    function readDataURL(file)
-    {
-        return new Promise((res, rej) =>
-        {
-            let reader = new FileReader();
-
-            reader.onloadend = () =>
-            {
-                res(reader.result);
-            };
-
-            reader.onerror = (e) =>
-            {
-                rej(e);
-            };
-
-            reader.readAsDataURL(file);
-        });
-    }
-
-    function decodeAudio(dataUrl, options = {})
-    {
-        return new Promise((res, rej) =>
-        {
-            let sound = new Howl({
-                src: dataUrl,
-                preload: true,
-                autoplay: false,
-                loop: false,
-                ...options,
-
-                onload: () =>
-                {
-                    res(sound);
-                },
-                onloaderror: (id, code) =>
-                {
-                    rej(id, code);
-                }
-            });
-
-            sound.load();
-        });
-    }
 });
+
+function readArrayBuffer(file)
+    {
+    return new Promise((res, rej) =>
+    {
+        let reader = new FileReader();
+
+        reader.onloadend = () =>
+        {
+            res(reader.result);
+        };
+
+        reader.onerror = (e) =>
+        {
+            rej(e);
+        };
+
+        reader.readAsArrayBuffer(file);
+    });
+}
+
+function loadAudio(file, loop = false, noTimer = false)
+{
+    return new Promise(async (res, rej) =>
+    {
+        try {
+            let arrayBuffer = await readArrayBuffer(file);
+            let audio = await PhiChartRender.WAudio.from(arrayBuffer, loop, noTimer);
+            res(audio);
+        } catch (e) {
+            rej(e);
+        }
+    });
+}
 
 function CsvReader(_text)
 {
@@ -1050,6 +820,49 @@ function blurImage(_texture, radius = 10)
             .then(result => res(result))
             .catch(e => rej(e))
     });
+}
+
+function resizeImage(_texture, quality = 1)
+{
+    let canvas = document.createElement('canvas');
+    let texture;
+    let pica = Pica({
+        features: ['all']
+    });
+
+    if (_texture.baseTexture) texture = _texture.baseTexture.resource.source;
+    else texture = _texture;
+
+    switch (quality)
+    {
+        case 0: {
+            canvas.width = 480;
+            canvas.height = texture.height * (480 / texture.width);
+            break;
+        }
+        case 1:
+        {
+            canvas.width = 720;
+            canvas.height = texture.height * (720 / texture.width);
+            break;
+        }
+        case 2:
+        {
+            canvas.width = 1080;
+            canvas.height = texture.height * (1080 / texture.width);
+            break;
+        }
+        default:
+        {
+            canvas.width = texture.width;
+            canvas.height = texture.height;
+        }
+    }
+
+    return (new Promise(async (res, rej) =>
+    {
+        res(await createImageBitmap(await pica.resize(texture, canvas)));
+    }));
 }
 
 function calcHeightPercent()
@@ -1180,13 +993,13 @@ function showGameResultPopup(game)
 
             if (!game._settings.challengeMode)
             {
-                if (-(80 / 360 * 100) <= acc && acc <= (80 / 360 * 100)) value.style.background = '#EDECB0';
+                if (-(80 / 360 * 100) <= acc && acc <= (80 / 360 * 100)) value.style.background = '#FFECA0';
                 else if (-(160 / 360 * 100) <= acc && acc <= (160 / 360 * 100)) value.style.background = '#B4E1FF';
                 else value.style.background = '#6c4343';
             }
             else
             {
-                if (-(40 / 180 * 100) <= acc && acc <= (40 / 180 * 100)) value.style.background = '#EDECB0';
+                if (-(40 / 180 * 100) <= acc && acc <= (40 / 180 * 100)) value.style.background = '#FFECA0';
                 else if (-(75 / 180 * 100) <= acc && acc <= (75 / 180 * 100)) value.style.background = '#B4E1FF';
                 else value.style.background = '#6c4343';
             }
@@ -1261,3 +1074,282 @@ function showGameResultPopup(game)
         return result;
     }
 }
+
+function switchTab(e)
+{
+    let targetTab = e.target;
+    let targetTabContent = targetTab.dataset.tabId;
+
+    if (!document.querySelector('div.tab div.content > *#tab-' + targetTabContent)) return;
+
+    for (const tab of document.querySelectorAll('div.tab div.bar > *'))
+    {
+        tab.classList.remove('active');
+    }
+    
+    for (const content of document.querySelectorAll('div.tab div.content > *[id^="tab-"]'))
+    {
+        content.style.display = 'none';
+    }
+
+    targetTab.classList.add('active');
+    document.querySelector('div.tab div.content > *#tab-' + targetTabContent).style.display = 'block';
+}
+
+async function loadChartFiles(_files)
+{
+    let fileList = [ ..._files ];
+
+    for (let fileIndex = 0; fileIndex < fileList.length; fileIndex++)
+    {
+        if (!fileList[fileIndex]) continue;
+
+        let file = fileList[fileIndex];
+        let fileFormatSplit = file.name.split('.');
+        let fileFormat = fileFormatSplit[fileFormatSplit.length - 1];
+
+        file.format = fileFormat;
+
+        doms.chartPackFileReadProgress.innerText = 'Loading files: ' + file.name + ' ...(' + (fileIndex + 1) + '/' + fileList.length + ')';
+
+        if (file.name === 'info.csv')
+        {
+            try {
+                let rawText = await readText(file);
+                let infos = CsvReader(rawText);
+
+                files.infos.push(...infos);
+                files.all[file.name] = infos;
+
+            } catch (e) {
+                
+            }
+        }
+        else if (file.name === 'line.csv')
+        {
+            try {
+                let rawText = await readText(file);
+                let lines = CsvReader(rawText);
+
+                files.lines.push(...lines);
+                files.all[file.name] = lines;
+
+            } catch (e) {
+                
+            }
+        }
+        else if (file.name === 'extra.json')
+        {
+            if (files.effects instanceof Array)
+            {
+                console.warn('Already loaded an extra.json, previously loaded file will be overwritten');
+                files.effects = null;
+            }
+
+            try {
+                let rawText = await readText(file);
+                let effects = PhiChartRender.Effect.from(JSON.parse(rawText));
+
+                files.effects = effects;
+                files.all[file.name] = effects;
+
+            } catch (e) {
+
+            } 
+        }
+        else if (file.name === 'Settings.txt' || file.name === 'info.txt')
+        {
+            try {
+                let rawText = await readText(file);
+                let info = SettingsReader(rawText);
+
+                files.infos.push(info);
+                files.all[file.name] = info;
+
+            } catch (e) {
+                
+            }
+        }
+        else
+        {
+            (await (new Promise(() =>
+            {
+                throw new Error('Just make a promise, plz ignore me');
+            }))
+            .catch(async () =>
+            {
+                let zipFiles = await JSZip.loadAsync(file, { createFolders: false });
+
+                for (const name in zipFiles.files)
+                {
+                    if (zipFiles.files[name].dir) continue;
+
+                    let zipFile = zipFiles.files[name];
+                    let newFile = new File(
+                        [ (await zipFile.async('blob')) ],
+                        name,
+                        {
+                            type: '',
+                            lastModified: zipFile.date
+                        }
+                    );
+
+                    fileList.push(newFile);
+                }
+
+                return;
+            })
+            .catch(async () =>
+            {
+                let chartRaw = await readText(file);
+                let chart;
+
+                try {
+                    chart = JSON.parse(chartRaw);
+                } catch (e) {
+                    chart = chartRaw;
+                }
+
+                chart = PhiChartRender.Chart.from(chart);
+
+                files.charts[file.name] = chart;
+                files.all[file.name] = chart;
+                doms.file.chart.appendChild(createSelectOption(file));
+
+                return;
+            })
+            .catch(async () =>
+            {
+                let imgBitmap = await createImageBitmap(file);
+                let texture = await Texture.from(imgBitmap);
+
+                Texture.addToCache(texture, file.name);
+
+                files.images[file.name] = texture;
+                files.all[file.name] = texture;
+                doms.file.bg.appendChild(createSelectOption(file));
+
+                return;
+            })
+            .catch(async () =>
+            {
+                let audio = await loadAudio(file, false, false);
+
+                files.musics[file.name] = audio;
+                files.all[file.name] = audio;
+                doms.file.music.appendChild(createSelectOption(file));
+
+                return;
+            })
+            .catch(async () =>
+            {
+                let shaderRaw = await readText(file);
+                let shader = PhiChartRender.Shader.from(shaderRaw, file.name);
+
+                files.shaders[file.name] = shader;
+                files.all[file.name] = shader;
+            })
+            .catch((e) =>
+            {
+                console.error('Unsupported file: ' + file.name);
+                return;
+            }));
+        }
+    }
+
+    if (doms.file.chart.childNodes.length >= 1 && doms.file.music.childNodes.length >= 1)
+    {
+        doms.file.chart.dispatchEvent(new Event('input'));
+        doms.startBtn.disabled = false;
+    }
+
+    doms.chartPackFileReadProgress.innerText = 'All done!';
+
+    function readText(file)
+    {
+        return new Promise((res, rej) =>
+        {
+            let reader = new FileReader();
+
+            reader.onloadend = () =>
+            {
+                res(reader.result);
+            };
+
+            reader.onerror = (e) =>
+            {
+                rej(e);
+            };
+
+            reader.readAsText(file);
+        });
+    }
+
+    function createSelectOption(file)
+    {
+        let option = document.createElement('option');
+        option.innerText = option.value = file.name;
+        return option;
+    }
+}
+
+async function initConsoleEasterEgg()
+{
+    try {
+        let url = await getImageBase64('./icons/64.png');
+        console.log('%c ', 'padding:32px;background:url(' + url + ') center center no-repeat;');
+    } catch (e) {}
+    
+    console.log('%cphi-chart-render%c' + GIT_VERSION, 'padding:8px;background-color:#1C1C1C;color:#FFF', 'padding:8px;background-color:#1E90FF;color:#FFF;');
+    
+    try {
+        let url = await getImageBase64('./icons/github.png');
+        console.log('%chttps://github.com/MisaLiu/phi-chart-render', 'padding:4px;padding-left:22px;background:url(' + url + ') left center no-repeat;background-color:#1C1C1C;background-size:contain;color:#FFF;');
+    } catch (e) {
+        console.log('%cGitHub: https://github.com/MisaLiu/phi-chart-render', 'padding:4px;background-color:#1C1C1C;color:#FFF;');
+    }
+    
+    console.groupCollapsed('❤️ Support me');
+    try {
+        let url = await getImageBase64('./icons/patreon.png');
+        console.log('%chttps://patreon.com/HIMlaoS_Misa', 'padding:4px;padding-left:22px;background:url(' + url + ') left center no-repeat;background-color:#f3455c;background-size:contain;color:#FFF;');
+    } catch (e) {
+        console.log('%Patreon: https://patreon.com/HIMlaoS_Misa', 'padding:4px;background-color:#f3455c;color:#FFF;');
+    }
+    
+    try {
+        let url = await getImageBase64('./icons/afdian.png');
+        console.log('%chttps://afdian.net/@MisaLiu', 'padding:4px;padding-left:22px;background:url(' + url + ') left center no-repeat;background-color:#946CE6;background-size:contain;color:#FFF;');
+    } catch (e) {
+        console.log('%爱发电: https://afdian.net/@MisaLiu', 'padding:4px;background-color:#946CE6;color:#FFF;');
+    }
+
+    console.groupEnd();
+
+    function getImageBase64(url) {
+        return new Promise((resolve, reject) => {
+            fetch(url)
+                .then(res => res.blob())
+                .then(res => {
+                    let reader = new FileReader();
+                    reader.onload = () => {
+                        resolve(reader.result);
+                    };
+                    reader.onerror = (e) => {
+                        reject(e);
+                    };
+                    reader.readAsDataURL(res);
+                }
+            );
+        });
+    }
+}
+
+function PlayLikeYouNeverDidBefore(game, currentTime)
+{
+    let currentSpeed = 1 + 0.5 * Math.sin(1.5708 * (currentTime % 2));
+    game.chart.music.speed = currentSpeed;
+    game.chart.sprites.info.songName.text = game.chart.info.name + ' (x' + Math.round(currentSpeed * 100) / 100 + ')';
+}
+
+export { loadChartFiles };

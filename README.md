@@ -32,6 +32,7 @@ Huge thanks to [@lchzh3473](https://github.com/lchzh3473) and his awesome [sim-p
     * [x] Parent judgeline
     * [x] Easing start/end point
     * [x] judgeline z order *(Need test)*
+    * [x] Bezier event easing *(Need test)*
     * [ ] Event link group *(?)*
     * [ ] BPM factor *(?)*
     * [ ] ~~attachUI (wont support)~~
@@ -56,19 +57,23 @@ Huge thanks to [@lchzh3473](https://github.com/lchzh3473) and his awesome [sim-p
         * [x] yOffset
         * [x] visible time
 
+* prpr features
+    * [x] Shaders *(Need test)*
+    * [ ] Videos
+
 ## Development
 
 You must have a Node.js enviorment to helping development.
 
-1. Clone this repo.
+1. `git clone https://github.com/MisaLiu/phi-chart-render`
 2. `npm install`
 3. `npm run dev`
 
 ## Thanks
 
 * [pixijs](https://github.com/pixijs/pixijs)
-* [howler.js](https://github.com/goldfire/howler.js)
 * [@lchzh3473](https://github.com/lchzh3473)
+* [@IcedDog](https://github.com/IcedDog)
 * [@luch4736](https://github.com/luch4736)
 * [@Naptie](https://github.com/Naptie)
 * [@Greenball233](https://github.com/Greenball233)

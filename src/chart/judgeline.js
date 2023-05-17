@@ -1,6 +1,6 @@
 import * as verify from '@/verify';
 import utils from './convert/utils';
-import { Sprite, Container, Text, Graphics } from 'pixi.js-legacy';
+import { Sprite, Container, Text, Graphics } from 'pixi.js';
 
 export default class Judgeline
 {
@@ -86,6 +86,7 @@ export default class Judgeline
         for (const name in this.eventLayers[0])
         {
             if (name == 'speed' || !(this.eventLayers[0][name] instanceof Array)) continue;
+            if (this.eventLayers[0][name].length <= 0) continue;
             if (this.eventLayers[0][name][0].startTime <= 0) continue;
             this.eventLayers[0][name].unshift({
                 startTime : 1 - 100,
@@ -379,8 +380,8 @@ export default class Judgeline
 
         if (this.parentLine)
         {
-            let newPosX = this.x * this.parentLine.cosr + this.y * this.parentLine.sinr + this.parentLine.x,
-                newPosY = this.y * this.parentLine.cosr - this.x * this.parentLine.sinr + this.parentLine.y;
+            let newPosX = (this.x * this.parentLine.cosr + this.y * this.parentLine.sinr) * 0.918554 + this.parentLine.x,
+                newPosY = (this.y * this.parentLine.cosr - this.x * this.parentLine.sinr) * 1.088662 + this.parentLine.y;
 
             this.x = newPosX;
             this.y = newPosY;

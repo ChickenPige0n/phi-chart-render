@@ -9,17 +9,10 @@
         <link rel="shortcut icon" href="./icons/favicon.ico" />
         <link rel="manifest" href="./manifest.webmanifest" />
         <link href="./style.css" rel="stylesheet" />
-        <script async src="https://www.googletagmanager.com/gtag/js?id=G-PW9YT2TVFV"></script>
         <!--script src="./eruda.min.js"></script>
         <script>eruda.init();</script-->
         <script>
             const GITHUB_CURRENT_GIT_HASH = `{{CURRENT_HASH}}`;
-
-            // Init google analytics
-            window.dataLayer = window.dataLayer || [];
-            function gtag(){dataLayer.push(arguments);}
-            gtag('js', new Date());
-            gtag('config', 'G-PW9YT2TVFV');
 
             function setCookie(cname,cvalue,exdays)
             {
@@ -61,6 +54,21 @@
                 return null;
             }
 
+            async function unregistServiceWorker()
+            {
+                if (navigator.serviceWorker.getRegistrations)
+                {
+                    let sws = await navigator.serviceWorker.getRegistrations();
+                    if (sws.length > 1)
+                    {
+                        for (const sw of sws)
+                        {
+                            sw.unregister();
+                        }
+                    }
+                }
+            }
+
             if (getSearchString('debug') === 'true')
             {
                 let xhr = new XMLHttpRequest();
@@ -90,123 +98,113 @@
             // Init service worker
             if (GITHUB_CURRENT_GIT_HASH != '{{' + 'CURRENT_HASH' + '}}' && 'serviceWorker' in navigator)
             {
-                (async () =>
+                /*
+                if (navigator.userAgent.indexOf('like Mac OS X') > -1)
                 {
-                    if (navigator.serviceWorker.getRegistrations)
+                    if (getCookie('ios-unregist') != 'true')
                     {
-                        let sws = await navigator.serviceWorker.getRegistrations();
-                        if (sws.length > 1)
-                        {
-                            for (const sw of sws)
-                            {
-                                sw.unregister();
-                            }
-                        }
+                        unregistServiceWorker();
+                        setCookie('ios-unregist', 'true');
                     }
-
+                }
+                else */
+                if (getSearchString('unregistServiceWorker') == 'true')
+                {
+                    unregistServiceWorker();
+                }
+                else
+                {
                     navigator.serviceWorker.register('./sw.js');
-                })();
+                }
             }
         </script>
     </head>
     <body>
         <div class="file-select">
             <div>
-                <b style=" font-size:xx-large; background-image: -webkit-linear-gradient(bottom, #114514, #1f1e33); -webkit-background-clip: text; -webkit-text-fill-color: transparent; ">Phi-chart-render by misaliu</b><br />
-                <b style=" font-size:xx-small; background-image: -webkit-linear-gradient(bottom, #114514, #1f1e33); -webkit-background-clip: text; -webkit-text-fill-color: transparent; ">this is a modified version by ChickenPige0n</b>
-            </div>
-            <hr />
-            <label>选择一个 .zip 或 .pez 文件: <input type="file" id="file-chart-pack" multiple disabled></label><br>
-            <div class="loading" id="file-read-progress">请等待素材加载完毕...</div>
-
-
-            <label>Custom skin pack: <input type="file" id="file-skin-pack" disabled /></label>&nbsp;<a href="./skin.example.zip" download="skin.example.zip">Download example skin pack</a><br>
-            <div class="loading" id="loading-skin-pack">No skinpack selected.</div>
-            <hr />
-
-            <label>谱面: <select id="file-chart"></select></label>
-            <label>歌曲: <select id="file-music"></select></label>
-            <label>背景图片: <select id="file-bg"></select></label>
-            <hr />
-            <div class="loading" id="loading-status">加载脚本中...</div>
-            <button id="start" disabled class="start" style="background-color:lawngreen; border-radius: 15px;">开始</button>
-
-
-            <br>
-            <fieldset>
-                <legend>播放设置</legend><br>
-                <label><input type="checkbox" id="settings-challenge-mode" />挑战模式</label>
-                <br>
-                <label><input type="checkbox" id="settings-autoplay" />AutoPlay</label>
-                <br>
-
-                <label>
-                    <input type="checkbox" id="settings-hitsound" checked />开启打击音
-                </label>
-                <br>
-
-                <label>谱面速度: <input type="range" id="settings-audio-speed" min="0.25" max="1.75" step="0.25" value="1"></label>
-
-                <br>
-                <label>打击音音量: <input type="range" id="settings-hitsound-volume" min="0" max="1" step="0.01" value="1"></label>
-                <br>
-            </fieldset>
-
-            <fieldset>
-                <legend>显示设置</legend>
-                <label><input type="checkbox" id="settings-multi-note-hl" checked />高亮等时音符</label>
-                <br>
-                <label><input type="checkbox" id="settings-show-ap-status" checked />FC/AP指示器</label>
-                <br>
-                <label><input type="checkbox" id="settings-show-input-point" />显示触摸位置</label>
-                <br>
-                <label>Note大小: <input type="range" id="settings-note-scale" min="0" max="4000" value="2000"></label>
-                <br>
-                <label>背景变暗: <input type="range" id="settings-bg-dim" min="0" max="1" step="0.01" value="0.5"></label>
-                <br>
-                <label>背景模糊: <input type="range" id="settings-bg-blur" min="0" max="100" value="50" /></label>
-            </fieldset>
-
-            <br>
-            <br />
-            <fieldset style="height:130px">
-                <legend>音频相关</legend>
-                <label>音频偏移: <input type="number" id="settings-audio-offset" placeholder="0" style="width:4em" />ms</label>
-                <br>
-                <div style="margin-left:20px">(对于Chrome或基于Chrome的浏览器，建议 -100ms)</div>
-                <button id="settings-test-input-delay">点击这个按钮以测试输入延迟...</button><br>
-            </fieldset>
-
-            <fieldset style="height:130px">
-                <legend>渲染相关</legend>
-                <label>
-                    <input type="checkbox" id="settings-force-canvas" />强制使用canvas渲染器
-                </label>
-                <br>
-                <label><input type="checkbox" id="settings-anti-alias" checked />抗锯齿</label>
-                <br>
-                <label><input type="checkbox" id="settings-low-resolution" />低分辨率模式</label>
-                <br>
-                <label><input type="checkbox" id="settings-debug" />Debug</label><br>
-            </fieldset>
-
-            <hr />
-            <div>
-                <b>如果你使用的是IOS:</b><br>
-                <span>请使用夸克浏览器以获得更好的体验(不是广告)</span>
+                <b>For iOS users:</b><br>
+                Please use Quark Browser for better experience (not ad) .
             </div>
             <hr />
             <div>
-                由于安卓火狐浏览器的一些性能问题，考虑使用 <a href="https://github.com/kiwibrowser/src.next/releases" target="_blank">Kiwi Browser</a> 或 <a href="https://viayoo.com/" target="_blank">Via</a> 或 <a href="https://www.google.com/chrome/" target="_blank">Google Chrome</a>.
+                Due to some performance issue on FireFox Android, consider using <a href="https://github.com/kiwibrowser/src.next/releases" target="_blank">Kiwi Browser</a> or <a href="https://viayoo.com/" target="_blank">Via</a> or <a href="https://www.google.com/chrome/" target="_blank">Google Chrome</a>.
             </div>
             <hr />
-
-
-            <br>
-
-            此版本是被<a href="https://github.com/ChickenPige0n/" target="_blank">ChickenPige0n</a>修改过的版本,原作者为<a href="https://github.com/MisaLiu/" target="_blank">MisaLiu</a>.<br>
-            GitHub 首页: <a href="https://github.com/ChickenPige0n/phi-chart-render" target="_blank">当前分支地址</a> 或 <a href="https://github.com/MisaLiu/phi-chart-render" target="_blank">原项目地址</a><br>
-            <a href="https://github.com/ChickenPige0n/phi-chart-render/issues/new/choose" target="_blank">在这</a>汇报bug
+            <div class="loading" id="loading-status">Loading scripts...</div>
+            <hr />
+            <div class="tab">
+                <div class="bar">
+                    <div data-tab-id="file" class="active">File</div>
+                    <div data-tab-id="visual">Visual</div>
+                    <div data-tab-id="sound">Sound</div>
+                    <div data-tab-id="other">Other</div>
+                    <div data-tab-id="phizone">PhiZone</div>
+                </div>
+                <div class="content">
+                    <div id="tab-file">
+                        <label>Select chart file(s): <input type="file" id="file-chart-pack" multiple disabled></label><br>
+                        <div class="loading" id="file-read-progress">Please wait until assets loaded...</div>
+                        <hr />
+                        <label>Chart: <select id="file-chart"></select></label><br>
+                        <label>Music: <select id="file-music"></select></label><br>
+                        <label>BG: <select id="file-bg"></select></label>
+                    </div>
+                    <div id="tab-visual">
+                        <label>Custom skin pack: <input type="file" id="file-skin-pack" disabled /></label>&nbsp;<a href="./skin.example.zip" download="skin.example.zip">Download example skin pack</a><br>
+                        <div class="loading" id="loading-skin-pack">No skinpack selected.</div>
+                        <hr />
+                        <label><input type="checkbox" id="settings-show-bg" checked />Show BG</label><br>
+                        <label><input type="checkbox" id="settings-multi-note-hl" checked />Highlight same time notes</label><br>
+                        <label><input type="checkbox" id="settings-show-ap-status" checked />Show AP status</label><br>
+                        <label><input type="checkbox" id="settings-show-input-point" checked />Show input point</label><br>
+                        <label><input type="checkbox" id="settings-anti-alias" checked />Anti-alias</label><br>
+                        <label><input type="checkbox" id="settings-low-resolution" />Low resolution mode</label><br>
+                        <label><input type="checkbox" id="settings-prpr-extra" checked />Use prpr's extra.json (experimental)</label>
+                        <hr />
+                        <label>BG quality: <select id="settings-bg-quality">
+                            <option value="0">Low (480P)</option>
+                            <option value="1" default selected>Medium (720P)</option>
+                            <option value="2">High (1080P)</option>
+                            <option value="3">Original</option>
+                        </select></label>
+                        <hr />
+                        <label>Note scale: <input type="range" id="settings-note-scale" min="0" max="4000" value="2000"></label><br>
+                        <label>Background dim: <input type="range" id="settings-bg-dim" min="0" max="1" step="0.01" value="0.5"></label><br>
+                        <label>BG blur: <input type="range" id="settings-bg-blur" min="0" max="100" value="50" /></label>
+                    </div>
+                    <div id="tab-sound">
+                        <label>Chart offset: <input type="number" id="settings-audio-offset" placeholder="0" style="width:4em" />ms</label><br>
+                        <div style="margin-left:20px">(recommended 100ms for Chrome/Chrome based browsers)</div>
+                        <button id="settings-test-input-delay">Tap on this button to test input delay...</button><br>
+                        <label><input type="checkbox" id="settings-use-browser-latency" />Use browser's output latency (experimental)</label><br>
+                        <label>Speed: <input type="range" id="settings-audio-speed" min="0.25" max="1.75" step="0.25" value="1"></label><br>
+                        <hr />
+                        <label><input type="checkbox" id="settings-hitsound" checked />Hitsound</label><br>
+                        <label>Hitsound volume: <input type="range" id="settings-hitsound-volume" min="0" max="1" step="0.01" value="1"></label><br>
+                    </div>
+                    <div id="tab-other">
+                        <label><input type="checkbox" id="settings-challenge-mode" />Challenge Mode</label><br>
+                        <label><input type="checkbox" id="settings-plyndb" />Play like you never did before</label><br>
+                        <label><input type="checkbox" id="settings-autoplay" />AutoPlay</label><br>
+                        <label><input type="checkbox" id="settings-debug" />Debug</label><br>
+                    </div>
+                    <div id="tab-phizone">
+                        <label>Paste chart link/ID from <a href="https://www.phi.zone/" target="_href">PhiZone</a> here: <input id="phizone-chart-link" /></label>
+                        <button id="phizone-download-chart">Download</button>
+                        <hr />
+                        <div class="loading" id="phizone-download-progress">No download task</div>
+                    </div>
+                </div>
+            </div>
+            <hr />
+            <button id="start" disabled>Start</button>
+            <hr />
+            Current version: <%= GIT_VERSION %><br>
+            GitHub homepage: <a href="https://github.com/MisaLiu/phi-chart-render" target="_blank">https://github.com/MisaLiu/phi-chart-render</a><br>
+            Report bugs <a href="https://github.com/MisaLiu/phi-chart-render/issues/new/choose" target="_blank">Here</a>
+            <hr />
+            Consider <a href="https://patreon.com/HIMlaoS_Misa" target="_blank">support me on Patreon</a> if you like!<br />
+            喜欢的话可以到 <a href="https://afdian.net/a/MisaLiu" target="_blank">爱发电</a> 支持一下！
             <hr />
             We uses <a href="https://sentry.io" target="_blank">Sentry.io</a> and <a href="https://analytics.google.com/" target="_blank">Google Analytics</a> to tracking errors and analyze user usage data.
 
@@ -283,6 +281,5 @@
             <pre><code class="content">Test Text Not A Real Error</code></pre>
             <div>The infomation about this error will upload to <a href="https://sentry.io" target="_blank">Sentry.io</a> for analyze and debug.</div>
         </div>
-        <script src="./script.js?hash={{CURRENT_HASH}}"></script>
     </body>
 </html>

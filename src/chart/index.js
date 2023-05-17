@@ -1,7 +1,7 @@
 import { number as verifyNum } from '@/verify';
 import * as Convert from './convert';
-import utils from './convert/utils';
-import { Sprite, Graphics, Text } from 'pixi.js-legacy';
+import md5Hash from 'md5-js';
+import { Sprite, Graphics, Text } from 'pixi.js';
 
 export default class Chart
 {
@@ -21,18 +21,18 @@ export default class Chart
             artist    : params.artist,
             author    : params.author,
             bgAuthor  : params.bgAuthor,
-            difficult : params.difficult
+            difficult : params.difficult,
+            md5       : params.md5
         };
 
         this.sprites = {};
-        this.noteJudgeCallback = null;
-        this.holdBetween = 0.15;
     }
 
     static from(rawChart, _chartInfo = {}, _chartLineTexture = [])
     {
         let chart;
         let chartInfo = _chartInfo;
+        let chartMD5;
 
         if (typeof rawChart == 'object')
         {
@@ -45,10 +45,13 @@ export default class Chart
                 chart = Convert.RePhiEdit(rawChart);
                 chartInfo = chart.info;
             }
+
+            chartMD5 = md5Hash(JSON.stringify(rawChart));
         }
         else if (typeof rawChart == 'string')
         {
             chart = Convert.PhiEdit(rawChart);
+            chartMD5 = md5Hash(rawChart);
         }
 
         if (!chart) throw new Error('Unsupported chart format');
@@ -58,7 +61,8 @@ export default class Chart
             artist    : chartInfo.artist,
             author    : chartInfo.author,
             bgAuthor  : chartInfo.bgAuthor,
-            difficult : chartInfo.difficult
+            difficult : chartInfo.difficult,
+            md5       : chartMD5
         };
 
         chart.judgelines.forEach((judgeline) =>
@@ -145,7 +149,7 @@ export default class Chart
         if (isReaded) this.isLineTextureReaded = true;
     }
 
-    createSprites(stage, size, textures, zipFiles = {}, speed = 1, bgDim = 0.5, multiNoteHL = true, debug = false)
+    createSprites(stage, size, textures, uiStage = null, zipFiles = {}, speed = 1, bgDim = 0.5, multiNoteHL = true, debug = false)
     {
         let linesWithZIndex = [];
 
@@ -228,7 +232,8 @@ export default class Chart
         this.sprites.info.songName.anchor.set(0, 1);
         this.sprites.info.songName.zIndex = 99999;
 
-        stage.addChild(this.sprites.info.songName);
+        if (uiStage) uiStage.addChild(this.sprites.info.songName);
+        else stage.addChild(this.sprites.info.songName);
 
 
         this.sprites.info.songDiff = new Text((this.info.difficult || 'SP Lv.?'), {
@@ -238,7 +243,8 @@ export default class Chart
         this.sprites.info.songDiff.anchor.set(1, 1);
         this.sprites.info.songDiff.zIndex = 99999;
 
-        stage.addChild(this.sprites.info.songDiff);
+        if (uiStage) uiStage.addChild(this.sprites.info.songDiff);
+        else stage.addChild(this.sprites.info.songDiff);
     }
 
     resizeSprites(size, isEnded)
@@ -319,29 +325,6 @@ export default class Chart
         this.sprites.info.songDiff.style.fontSize = size.heightPercent * 36;
         this.sprites.info.songDiff.position.x = size.width-size.heightPercent * 43;
         this.sprites.info.songDiff.position.y = size.height - size.heightPercent * 25;
-    }
-
-    calcTime(currentTime)
-    {
-        for (let i = 0, length = this.bpmList.length; i < length; i++)
-        {
-            let bpm = this.bpmList[i];
-
-            if (bpm.endTime < currentTime) continue;
-            if (bpm.startTime > currentTime) break;
-
-            this.holdBetween = bpm.holdBetween;
-        };
-
-        for (let i = 0, length = this.judgelines.length; i < length; i++)
-        {
-            this.judgelines[i].calcTime(currentTime, this.renderSize);
-        };
-        for (let i = 0, length = this.notes.length; i < length; i++)
-        {
-            this.notes[i].calcTime(currentTime, this.renderSize);
-            if (this.noteJudgeCallback) this.noteJudgeCallback(currentTime, this.notes[i]);
-        };
     }
 
     reset()

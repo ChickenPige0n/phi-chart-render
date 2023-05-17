@@ -8,7 +8,7 @@
  * 
  * Copyright (c) 2022 by ${git_name_email}, All Rights Reserved. 
  */
-const ASSETS_VERSION = '0.2';
+const ASSETS_VERSION = '0.3';
 const GITHUB_CURRENT_GIT_HASH = `{{CURRENT_HASH}}`;
 
 self.addEventListener('install', (e) =>
@@ -44,16 +44,16 @@ self.addEventListener('activate', (e) =>
 self.addEventListener('fetch', (e) =>
 {
     if (e.request.method != 'GET') return;
-    if (!(/phi-chart-render\/?$|index\.html|\.css|script\.js\?hash=|assets|fonts/.test(e.request.url))) return;
+    if (!(/phi-chart-render\/?$|index\.html|\.css|script\-[v0-9a-z\-\.]+\.js|assets|fonts/.test(e.request.url))) return;
 
     let req = e.request;
-    let resVersion = (/phi-chart-render\/?$|index\.html|\.css|script\.js\?hash=/.test(e.request.url)) ? GITHUB_CURRENT_GIT_HASH : ASSETS_VERSION;
+    let resVersion = (/phi-chart-render\/?$|index\.html|\.css|script\-[v0-9a-z\-\.]+\.js/.test(e.request.url)) ? GITHUB_CURRENT_GIT_HASH : ASSETS_VERSION;
 
     e.respondWith(
         caches.match(e.request)
             .then((res) =>
             {
-                if (res && !(/phi-chart-render\/?$|index\.html|\.css|script\.js\?hash=/.test(e.request.url)))
+                if (res && !(/phi-chart-render\/?$|index\.html|\.css|script\-[v0-9a-z\-\.]+\.js/.test(e.request.url)))
                 {
                     console.log('[Service Worker] Fetching cache: ' + req.url);
                     return res;
