@@ -85,7 +85,7 @@ export default class Note
                     let head = new Sprite(texture['holdHead' + (this.isMulti && multiHL ? 'HL' : '')]);
                     let body = new Sprite(texture['holdBody' + (this.isMulti && multiHL ? 'HL' : '')]);
                     let end =  new Sprite(texture['holdEnd']);
-                    end.width  = this.isMulti && multiHL ? 970 : 989;
+                    end.width  = this.isMulti && multiHL ? 970 : 970;
                     end.height = this.isMulti && multiHL ? 50 : 50;
 
                     head.anchor.set(0.5,0.50);

@@ -5,6 +5,9 @@ import * as CallbackFunc from './callback';
 import { Shader } from '@/main';
 import { Application, Container, Texture, Sprite, Graphics, Text, Rectangle, settings as PIXISettings } from 'pixi.js';
 
+export const upperUIDistance = 40;
+export const leftUIDistance = 40;
+
 PIXISettings.RENDER_OPTIONS.hello = true;
 
 const ProgressBarCache = (() =>
@@ -246,8 +249,8 @@ export default class Game
         this.sprites.pauseButton.on('pointerdown', this._pauseBtnClickCallback);
 
         this.sprites.pauseButton.hitArea = new Rectangle(
-            -(this.sprites.pauseButton.texture.width * 1.5),
-            -(this.sprites.pauseButton.texture.height / 2),
+            -(this.sprites.pauseButton.texture.width * .75),
+            -(this.sprites.pauseButton.texture.height),
             this.sprites.pauseButton.texture.width * 2,
             this.sprites.pauseButton.texture.height * 2
         );
@@ -256,7 +259,7 @@ export default class Game
         this.sprites.pauseButton.isEndRendering = false;
         this.sprites.pauseButton.lastRenderTime = Date.now();
 
-        this.sprites.pauseButton.anchor.set(1, 0);
+        this.sprites.pauseButton.anchor.set(0, 0);
         this.sprites.pauseButton.alpha = 0.5;
         this.sprites.pauseButton.zIndex = 99999;
         this.render.UIContainer.addChild(this.sprites.pauseButton);
@@ -524,9 +527,9 @@ export default class Game
 
             if (this.sprites.pauseButton)
             {
-                this.sprites.pauseButton.position.x = this.render.sizer.width - this.render.sizer.heightPercent * 72;
-                this.sprites.pauseButton.position.y = this.render.sizer.heightPercent * (61 + 14);
-                this.sprites.pauseButton.scale.set(0.94 * this.render.sizer.heightPercent);
+                this.sprites.pauseButton.scale.set(0.67 * this.render.sizer.heightPercent);
+                this.sprites.pauseButton.position.x = this.render.sizer.heightPercent * leftUIDistance;
+                this.sprites.pauseButton.position.y = this.render.sizer.heightPercent * (upperUIDistance);
             }
 
             if (this.sprites.fakeJudgeline)
